@@ -1,0 +1,18 @@
+# Python 3.10; CUDA 12.1 (cu121). Install NVIDIA CUDA Toolkit 12.1 separately
+# for the legacy CuPy correlation kernel's NVRTC compiler.
+--extra-index-url https://download.pytorch.org/whl/cu121
+
+torch==2.4.0+cu121
+torchvision==0.19.0+cu121
+cupy-cuda12x==12.3.0
+
+numpy==1.26.4
+scipy==1.13.1
+opencv-python==4.10.0.84
+Pillow==10.4.0
+imageio==2.34.2
+matplotlib==3.8.4
+pandas==2.2.2
+tensorboardX==2.6.2.2
+termcolor==2.4.0
+tqdm==4.66.5

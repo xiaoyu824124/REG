@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.idea/
+.cupy/
+cupy_cache/
+roadscene_runs/
+roadscene_*/
+*.pth
+*.pt
+*.ckpt
+*.flo
+*.tif
+*.tiff
+data/
+datasets/RoadScence/
