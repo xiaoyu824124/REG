@@ -23,8 +23,9 @@ package and a matching CUDA Toolkit.
 
 ## Train and compare
 
-Run from the GLU-Net repository root. Supply your own RoadScene and pretrained
-weight paths on the server.
+Run from the GLU-Net repository root. RoadScene stays outside the repository;
+point `--data-root` to its location on the server. The baseline checkpoint is
+included at `pre_trained_models/GLUNet_DPED_CityScape_ADE.pth`.
 
 First check the image/flow direction with a known 512x512 translation and five
 real validation pairs:
@@ -37,7 +38,7 @@ python audit_roadscene.py --data-root /path/to/RoadScence \
 ```bash
 python roadscene_coarse.py train \
   --data-root /path/to/RoadScence \
-  --pretrained /path/to/GLUNet_DPED_CityScape_ADE.pth \
+  --pretrained pre_trained_models/GLUNet_DPED_CityScape_ADE.pth \
   --output roadscene_runs/sa_ca \
   --epochs 20 --batch-size 2
 ```
@@ -56,7 +57,7 @@ To evaluate a trained module on held-out test images:
 ```bash
 python roadscene_coarse.py eval \
   --data-root /path/to/RoadScence \
-  --pretrained /path/to/GLUNet_DPED_CityScape_ADE.pth \
+  --pretrained pre_trained_models/GLUNet_DPED_CityScape_ADE.pth \
   --baseline-checkpoint roadscene_runs/sa_ca/best_baseline.pth \
   --attention-checkpoint roadscene_runs/sa_ca/best_attention.pth \
   --eval-split test --output roadscene_runs/test
