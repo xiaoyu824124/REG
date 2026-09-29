@@ -1,8 +1,9 @@
 # REG cross-modal registration workspace
 
 - `GLU-Net/`: the GLU-Net baseline and the RoadScene coarse SA/CA experiment.
-- `CRFT-main/`: the CRFT reference implementation used to inspect feature
-  interaction, dataset conventions, and evaluation code.
+
+The CRFT reference implementation is kept locally for code comparison and is
+not required to run this GLU-Net experiment.
 
 Start with [`GLU-Net/ROADSCENE_SA_CA.md`](GLU-Net/ROADSCENE_SA_CA.md). The
 baseline checkpoint is included at
