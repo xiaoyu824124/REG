@@ -71,6 +71,16 @@ high 128-grid outside fraction also reflects the trained `deconv2` warp
 centre and the narrower window; it cannot be read as a failure rate by
 itself.
 
+At the local query grids, the first 32-grid stage lowers mean residual EPE
+from 24.09 to 11.43px **inside** its window, and from 102.75 to 25.02px
+**outside**. The 64-grid stage lowers it from 9.56 to 8.30px inside, but only
+57.15 to 56.56px outside. The last-stage outside group goes from 68.43 to
+15.97px, largely correcting its learned upsampler's shifted centre. These
+are query-level residuals around each stage's own pre-correlation warp
+centre, so they are not the same measure as the full-image stage EPE table.
+They show useful local correction where matches are reachable; they do not
+establish a dominant local descriptor ambiguity.
+
 The top quartile of visible-image Sobel edge strength (1,353,329 valid
 pixels) has 19.64→10.23 coarse→final EPE; the other valid pixels have
 20.95→12.22. This simple single-modality edge proxy does not show a broad
