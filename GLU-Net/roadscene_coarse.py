@@ -29,14 +29,17 @@ def load_base_weights(model, path):
     state = checkpoint.get("state_dict", checkpoint)
     state = {key.removeprefix("module."): value for key, value in state.items()}
     missing, unexpected = model.load_state_dict(state, strict=False)
-    if unexpected or any(not key.startswith("coarse_attention.") for key in missing):
+    if unexpected or any(not key.startswith(("coarse_attention.", "coarse_dns.", "coarse_mind."))
+                         for key in missing):
         raise RuntimeError(f"Incompatible GLU-Net checkpoint: missing={missing}, unexpected={unexpected}")
 
 
-def make_model(checkpoint, attention, device, train_decoder=False):
+def make_model(checkpoint, attention, device, train_decoder=False, dns=False, mind=None):
+    if attention and dns:
+        raise ValueError("SA/CA and DNS are separate experiment arms")
     model = GLUNet_model(evaluation=False, pyramid_type="VGG",
                         cyclic_consistency=True, coarse_attention=attention,
-                        backbone_pretrained=False)
+                        backbone_pretrained=False, coarse_dns=dns, coarse_mind=mind)
     load_base_weights(model, checkpoint)
     for parameter in model.parameters():
         parameter.requires_grad_(False)
@@ -45,6 +48,12 @@ def make_model(checkpoint, attention, device, train_decoder=False):
             parameter.requires_grad_(True)
     if attention:
         for parameter in model.coarse_attention.parameters():
+            parameter.requires_grad_(True)
+    if dns:
+        for parameter in model.coarse_dns.parameters():
+            parameter.requires_grad_(True)
+    if mind:
+        for parameter in model.coarse_mind.parameters():
             parameter.requires_grad_(True)
     return model.to(device).eval()
 
@@ -80,7 +89,8 @@ def extract_coarse_features(model, target_input, source_input):
         source_features = model.pyramid(source_input)[-3]
     if target_features.shape[-2:] != (16, 16):
         raise ValueError(f"Expected 16x16 coarse features, got {target_features.shape[-2:]}")
-    return target_features, source_features
+    return model.enrich_coarse_features(target_features, source_features,
+                                       target_input, source_input)
 
 
 def predict_coarse(model, target_input, source_input, features=None):
@@ -279,6 +289,8 @@ def main():
     parser.add_argument("--full-model", action="store_true",
                         help="also evaluate final flow; requires CuPy and CUDA Toolkit")
     args = parser.parse_args()
+    if args.mode == "train" and args.eval_split != "val":
+        parser.error("Training/model selection must use val; the test split is held out")
     if args.full_model and args.mode != "eval":
         parser.error("--full-model is only available in eval mode")
     if args.max_eval_samples is not None and args.mode != "eval":

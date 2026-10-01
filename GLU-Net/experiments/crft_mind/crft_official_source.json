@@ -1,0 +1,22 @@
+{
+  "official_revision": "5ce912f55fea89cb3159205f38c24fd0e6a1fa21",
+  "all_source_files_match_ignoring_line_endings": true,
+  "files": [
+    "src/crft/__init__.py",
+    "src/crft/backbone/__init__.py",
+    "src/crft/backbone/resnet.py",
+    "src/crft/crft.py",
+    "src/crft/crft_module/__init__.py",
+    "src/crft/crft_module/coarse_matching.py",
+    "src/crft/crft_module/fine_matching.py",
+    "src/crft/crft_module/fine_process.py",
+    "src/crft/crft_module/linear_attention.py",
+    "src/crft/crft_module/transformer.py",
+    "src/crft/utils/geometry.py",
+    "src/crft/utils/position_encoding.py",
+    "src/config/default.py",
+    "configs/crft/outdoor/visible_thermal.py",
+    "configs/data/roadscence_512.py",
+    "src/lightning/lightning_crft.py"
+  ]
+}

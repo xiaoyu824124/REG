@@ -1,0 +1,234 @@
+{
+  "descriptor": {
+    "translation_max_diff": 0.0,
+    "affine_intensity_max_diff": 4.172325134277344e-06,
+    "intensity_inversion_max_diff": 7.569789886474609e-06,
+    "pooled_alignment_max_diff": 0.0,
+    "actual_256_path_alignment_max_diff": 0.0,
+    "recompute_vs_pool_mean_abs_diff_observation": 0.04495535045862198,
+    "shape": [
+      1,
+      8,
+      512,
+      512
+    ],
+    "range": [
+      0.0001027711114147678,
+      1.0
+    ]
+  },
+  "metrics": {
+    "samples": 2,
+    "valid_pixels_full": 7,
+    "final_flow_epe_512px": 1.6652648789542062,
+    "aepe_pair_mean_512px": 1.7071067690849304,
+    "cmr_pair_percent": {
+      "5": 100.0,
+      "4": 100.0,
+      "3": 100.0,
+      "2": 50.0,
+      "1": 0.0,
+      "0.9": 0.0,
+      "0.8": 0.0,
+      "0.7": 0.0,
+      "0.6": 0.0,
+      "0.5": 0.0,
+      "0.4": 0.0,
+      "0.3": 0.0,
+      "0.2": 0.0,
+      "0.1": 0.0
+    },
+    "pixel_success_percent_auxiliary": {
+      "5": 100.0,
+      "4": 85.71428571428571,
+      "3": 85.71428571428571,
+      "2": 71.42857142857143,
+      "1": 14.285714285714286,
+      "0.9": 14.285714285714286,
+      "0.8": 14.285714285714286,
+      "0.7": 14.285714285714286,
+      "0.6": 14.285714285714286,
+      "0.5": 14.285714285714286,
+      "0.4": 14.285714285714286,
+      "0.3": 14.285714285714286,
+      "0.2": 14.285714285714286,
+      "0.1": 14.285714285714286
+    }
+  },
+  "models": {
+    "b_baseline_zero_gate": {
+      "flow_max_diff": 0.0,
+      "correlation_max_diff": 0.0,
+      "full_flow_max_diff": 0.0,
+      "reference_checkpoint": "roadscene_runs\\sa_ca\\best_baseline.pth"
+    },
+    "b_attention_zero_gate": {
+      "flow_max_diff": 0.0,
+      "correlation_max_diff": 0.0,
+      "full_flow_max_diff": 0.0,
+      "reference_checkpoint": "roadscene_runs\\sa_ca\\best_attention.pth"
+    },
+    "a_sa_zero_gate": {
+      "flow_max_diff": 0.0,
+      "corr_max_diff": 0.0
+    },
+    "a_gradient": {
+      "gradient_abs_sum": 825.8360595703125,
+      "frozen_encoder_has_no_parameter_grad": true
+    },
+    "b_sa_zero_gate": {
+      "flow_max_diff": 0.0,
+      "corr_max_diff": 0.0
+    },
+    "b_gradient": {
+      "gradient_abs_sum": 0.9120199680328369,
+      "frozen_encoder_has_no_parameter_grad": true
+    }
+  },
+  "device": "cuda",
+  "note": "synthetic checks and one validation pair; not trained MIND results",
+  "real_pair_descriptor": {
+    "IR": {
+      "shape": [
+        1,
+        8,
+        256,
+        256
+      ],
+      "min": 0.0,
+      "max": 1.0,
+      "mean": 0.5112826824188232
+    },
+    "visible": {
+      "shape": [
+        1,
+        8,
+        256,
+        256
+      ],
+      "min": 2.0550449214504112e-32,
+      "max": 1.0,
+      "mean": 0.5828708410263062
+    }
+  },
+  "crft_coordinates": {
+    "coarse_target_8_8_to_source_xy": [
+      9,
+      7
+    ],
+    "coarse_flow_xy": [
+      1.0,
+      -1.0
+    ],
+    "image_flow_xy": [
+      8.0,
+      -8.0
+    ],
+    "source_flat_index": 121,
+    "native64_flow_xy": [
+      4,
+      -4
+    ],
+    "rescaled512_flow_xy": [
+      32.0,
+      -32.0
+    ],
+    "source_hashes": {
+      "src/crft/__init__.py": "8cf274f0dd658be016f04ada0dc1d63cf82433eb51e6127dc06c7b4da3ca714c",
+      "src/crft/backbone/__init__.py": "e8ee697a58a63fc562ee3d444832ca92db9c7ce318a11611460b4d7c6d52ceee",
+      "src/crft/backbone/resnet.py": "be369a6d43aa24916cf66ff8f8d5b785f580c78dc59b9e756870a9253526f50f",
+      "src/crft/crft.py": "35b618a3362350de94205fbdc95620692f86e63c228f31f13d7bc6225182df0f",
+      "src/crft/crft_module/__init__.py": "b396cdc8a8519d071fa67f733f42c35668ecd19d9b37591fa0f202586ac13f3f",
+      "src/crft/crft_module/coarse_matching.py": "a52e2188ed1671984dd4d3e556a36f30c048e7dd3fa6260b15c5bb4ec381643e",
+      "src/crft/crft_module/fine_matching.py": "1132f4dd48932c76a26a7f7cdbadd1e4d2aa574c9fbdfa98727def753553505d",
+      "src/crft/crft_module/fine_process.py": "7cde1bbc2663de867139f2e94c41b75362d46097860c56038e9bf3315bab514e",
+      "src/crft/crft_module/linear_attention.py": "c332c12b90e57abf385cfcad239212d5cc76b11ddb48827b6db6ce1aa77f6d14",
+      "src/crft/crft_module/transformer.py": "810decfa22d5b4e007dfa499d437f05a2b052f9b1f258fdfb38b56a08e7ab58d",
+      "src/crft/utils/geometry.py": "7e575bbc65559778109fa608b4b4f32e6e17ac42d85bb8d6ce9e095fec2d705c",
+      "src/crft/utils/position_encoding.py": "feb809acdfe2b6456aac0b39ea0f051bc3f71823b19af0b54652f003bfce7942",
+      "src/config/default.py": "e3e425246e0c177a8ec25ed28ac71fe12d3550b40225d42f53e12a66903f4ba5",
+      "configs/crft/outdoor/visible_thermal.py": "7f9992f8defae65328a3937aa87994e028339a14a37da6f30d5bed50ee3ba7ae",
+      "configs/data/roadscence_512.py": "bb0d033d114e17fb9d5626fbd7ee4781dbaa065a5245277e90a61b5cb764da30",
+      "src/lightning/lightning_crft.py": "7a45a956a96b3a44b57afdccfd54556733fc53b8a3f0148c22726babc1317c5c"
+    },
+    "config": {
+      "resolution": [
+        8,
+        2
+      ],
+      "fine_window_size": 5,
+      "medium_window_size": 3,
+      "resnet": {
+        "initial_dim": 128,
+        "block_dims": [
+          128,
+          196,
+          256
+        ]
+      },
+      "coarse": {
+        "inference": false,
+        "d_model": 256,
+        "d_ffn": 256,
+        "nhead": 8,
+        "layer_names": [
+          "self",
+          "cross",
+          "self",
+          "cross",
+          "self",
+          "cross",
+          "self",
+          "cross"
+        ],
+        "attention": "linear"
+      },
+      "match_coarse": {
+        "inference": false,
+        "d_model": 256,
+        "thr": 0.3,
+        "border_rm": 0,
+        "match_type": "dual_softmax",
+        "dsmax_temperature": 0.1,
+        "train_coarse_percent": 0.3,
+        "train_pad_num_gt_min": 200
+      },
+      "fine": {
+        "denser": false,
+        "inference": false,
+        "dsmax_temperature": 0.1,
+        "thr": 0.1,
+        "mlp_hidden_dim_coef": 2,
+        "nhead_fine_level": 8,
+        "nhead_medium_level": 7
+      },
+      "loss": {
+        "focal_alpha": 0.25,
+        "focal_gamma": 2.0,
+        "pos_weight": 1.0,
+        "neg_weight": 1.0,
+        "coarse_weight": 0.5,
+        "fine_weight": 0.3,
+        "sub_weight": 10000
+      },
+      "pretrain_patch_size": 128
+    }
+  },
+  "crft_resize_matches_opencv": {
+    "source_image": 0.0,
+    "target_image": 0.0
+  },
+  "crft_chunk_equivalence_64px_random_weights": {
+    "max_flow_abs_diff": 0.0,
+    "adapter": {
+      "query_chunk": 64,
+      "modified_runtime_modules": [
+        "VanillaAttention",
+        "CrossBidirectionalAttention",
+        "VanillaAttention",
+        "CrossBidirectionalAttention"
+      ],
+      "algorithm": "exact global softmax, independent query row chunks, float32"
+    }
+  }
+}

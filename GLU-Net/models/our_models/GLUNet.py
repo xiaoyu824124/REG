@@ -13,6 +13,8 @@ from models.our_models.consensus_network_modules import MutualMatching, NeighCon
 import numpy as np
 from .bilinear_deconv import BilinearConvTranspose2d
 from .coarse_attention import CoarseSelfCrossAttention
+from .coarse_dns import CoarseDNS
+from .mind import CoarseMIND
 
 
 class GLUNet_model(nn.Module):
@@ -24,7 +26,8 @@ class GLUNet_model(nn.Module):
                  refinement_at_all_levels=False, refinement_at_adaptive_reso=True,
                  batch_norm=True, pyramid_type='VGG', md=4, upfeat_channels=2, dense_connection=True,
                  consensus_network=False, cyclic_consistency=True, decoder_inputs='corr_flow_feat',
-                 coarse_attention=False, backbone_pretrained=True):
+                 coarse_attention=False, backbone_pretrained=True, coarse_dns=False,
+                 coarse_mind=None):
         """
         input: md --- maximum displacement (for correlation. default: 4), after warpping
 
@@ -38,6 +41,13 @@ class GLUNet_model(nn.Module):
         self.coarse_attention = (CoarseSelfCrossAttention(
             channels=512 if pyramid_type == 'VGG' else 1024)
             if coarse_attention else None)
+        if coarse_attention and coarse_dns:
+            raise ValueError('SA/CA and DNS must be evaluated separately')
+        self.coarse_dns = (CoarseDNS(channels=512 if pyramid_type == 'VGG' else 1024)
+                           if coarse_dns else None)
+        if coarse_dns and coarse_mind:
+            raise ValueError('MIND and DNS must be evaluated separately')
+        self.coarse_mind = None
 
         # where to put the refinement networks
         self.refinement_at_all_levels = refinement_at_all_levels
@@ -163,6 +173,15 @@ class GLUNet_model(nn.Module):
             self.pyramid = ResNetPyramid(pretrained=backbone_pretrained)
         else:
             self.pyramid = VGGPyramid(pretrained=backbone_pretrained)
+
+        # The legacy global Conv2d initialization above must not overwrite A's
+        # deterministic mean input adapter. Use identical MIND initialization
+        # in arms with/without SA/CA, independent of their constructor RNG use.
+        if coarse_mind:
+            with torch.random.fork_rng(devices=[]):
+                torch.manual_seed(2026)
+                self.coarse_mind = CoarseMIND(coarse_mind,
+                    channels=512 if pyramid_type == 'VGG' else 1024)
 
         self.evaluation=evaluation
 
@@ -292,12 +311,24 @@ class GLUNet_model(nn.Module):
                im_source_256.to(device).contiguous(), im_target_256.to(device).contiguous(), \
                ratio_x, ratio_y, h_original, w_original
 
+    def enrich_coarse_features(self, target_features, source_features,
+                               target_input, source_input):
+        if self.coarse_mind is None:
+            return target_features, source_features
+        if self.coarse_mind.route == 'a':
+            return (self.coarse_mind.encode_input(target_input, self.pyramid),
+                    self.coarse_mind.encode_input(source_input, self.pyramid))
+        return (self.coarse_mind.residual(target_features, target_input),
+                self.coarse_mind.residual(source_features, source_input))
+
     def coarsest_resolution_flow(self, c14, c24, h_256, w_256, return_corr=False):
         ratio_x = 16.0 / float(w_256)
         ratio_y = 16.0 / float(h_256)
         b = c24.shape[0]
         if self.coarse_attention is not None:
             c14, c24 = self.coarse_attention(c14, c24)
+        if self.coarse_dns is not None:
+            c14, c24 = self.coarse_dns(c14, c24)
         if self.cyclic_consistency:
             corr4d = self.corr(self.l2norm(c24), self.l2norm(c14))  # first source, then target
             # run match processing model
@@ -350,6 +381,8 @@ class GLUNet_model(nn.Module):
 
         # RESOLUTION 256x256
         # level 16x16
+        c14, c24 = self.enrich_coarse_features(c14, c24,
+                                             im_target_256, im_source_256)
         flow4 = self.coarsest_resolution_flow(c14, c24, h_256, w_256)
         up_flow4 = self.deconv4(flow4)
 

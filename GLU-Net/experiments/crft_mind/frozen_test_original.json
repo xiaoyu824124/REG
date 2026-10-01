@@ -1,0 +1,89 @@
+{
+  "baseline": {
+    "samples": 22,
+    "valid_pixels_full": 5143584,
+    "valid_pixels_coarse": 4862,
+    "valid_corr_queries": 4862,
+    "epe_256px": 15.043695598117417,
+    "corr_ce": 4.545827058253098,
+    "corr_top1": 0.1353352529823118,
+    "warp_edge_error": 0.9990799589590593,
+    "inference_ms_per_pair": 6.104645451573147
+  },
+  "attention": {
+    "samples": 22,
+    "valid_pixels_full": 5143584,
+    "valid_pixels_coarse": 4862,
+    "valid_corr_queries": 4862,
+    "epe_256px": 11.524488429481824,
+    "corr_ce": 4.336803365665814,
+    "corr_top1": 0.1497326203208556,
+    "warp_edge_error": 1.0007559873841025,
+    "inference_ms_per_pair": 6.867045457263223
+  },
+  "dataset": "G:\\cxj\\RoadScence",
+  "split": "test",
+  "flow_unit": "pixels at 256x256 image scale",
+  "warp_error": "normalized edge magnitude L1 at 256x256",
+  "initialization_check": {
+    "flow_max_abs_diff": 0.0,
+    "corr_max_abs_diff": 0.0
+  },
+  "pretrained": "pre_trained_models\\GLUNet_DPED_CityScape_ADE.pth",
+  "pretrained_sha256": "2eac424ee4c9998cafed7ca60e7181d9f54adcee7e8e71250c5f2c7c0c9e50b1",
+  "torch": "2.4.0+cu121",
+  "cuda": "12.1",
+  "device": "cuda",
+  "train_seed": 2026,
+  "epochs": null,
+  "max_eval_samples": null,
+  "training": "matched decoder4 fine-tuning; SA/CA branch also trains its attention",
+  "selected_checkpoints": {
+    "baseline": {
+      "path": "roadscene_runs\\sa_ca\\best_baseline.pth",
+      "sha256": "04b11ad4688054f0b462c643efd70647638dbe796e098015819ee7404066178d",
+      "epoch": 18,
+      "validation": {
+        "samples": 23,
+        "valid_pixels_full": 5413286,
+        "valid_pixels_coarse": 5103,
+        "valid_corr_queries": 5103,
+        "epe_256px": 13.304584638478591,
+        "corr_ce": 4.544335540406685,
+        "corr_top1": 0.14618851655888693,
+        "warp_edge_error": 1.0420729440191518,
+        "inference_ms_per_pair": 8.885421739567233
+      }
+    },
+    "attention": {
+      "path": "roadscene_runs\\sa_ca\\best_attention.pth",
+      "sha256": "91f7c0cfa41e9f83bd47ee10e92c8e129d0e4f5ccfa4d5b7625dfaa65e22f0ac",
+      "epoch": 20,
+      "validation": {
+        "samples": 23,
+        "valid_pixels_full": 5413286,
+        "valid_pixels_coarse": 5103,
+        "valid_corr_queries": 5103,
+        "epe_256px": 10.940038311371682,
+        "corr_ce": 4.306997434872869,
+        "corr_top1": 0.1610817166372722,
+        "warp_edge_error": 1.0366627703542295,
+        "inference_ms_per_pair": 10.630504347120777
+      }
+    }
+  },
+  "final_flow": {
+    "baseline": {
+      "samples": 22,
+      "valid_pixels_full": 5143584,
+      "final_flow_epe_512px": 19.30231157885241,
+      "inference_ms_per_pair": 37.67803181968206
+    },
+    "attention": {
+      "samples": 22,
+      "valid_pixels_full": 5143584,
+      "final_flow_epe_512px": 11.821196562552492,
+      "inference_ms_per_pair": 37.668550000737675
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "code_check_only": true,
+  "native_input_size": 64,
+  "output_shape": [
+    1,
+    2,
+    512,
+    512
+  ],
+  "coarse_shape": [
+    1,
+    2,
+    8,
+    8
+  ],
+  "matcher_prefix_strict_roundtrip_max_diff": 0.0,
+  "attention": {
+    "algorithm": "official unchunked attention",
+    "native_input_size": 64
+  },
+  "note": "Random checkpoint validates loader and official64-to512 pipeline; no accuracy metrics"
+}

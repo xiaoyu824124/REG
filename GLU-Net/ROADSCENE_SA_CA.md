@@ -84,3 +84,31 @@ fails; coarse metrics remain available and must not be reported as final flow
 registration quality. Keep `--eval-split val` for development. Run test once
 after selecting both checkpoints on validation, then use `--eval-split test`
 for the final held-out report.
+
+## Frozen test status
+
+The original 22-pair test run is complete and fixed. Do not reuse test errors to
+choose models or parameters. Further CRFT/MIND work uses train/val and the
+protocol in [ROADSCENE_CRFT_MIND.md](ROADSCENE_CRFT_MIND.md).
+
+## Train/validation failure analysis
+
+Use the fixed best checkpoints to export paired per-image errors, correlation
+Top-1, ground-truth displacement ranges, and inference/memory costs. The
+diagnostic tool accepts only `train` or `val`; it cannot read the test split.
+Displacement bins are `[0, 8)`, `[8, 16)`, `[16, 32)`, `[32, 64)`, and
+`[64, infinity)` in original 512px units. Each bin uses the same valid pixels
+for baseline and attention. The output is `per_image.csv` and
+`diagnostics.json`, including the IDs with increased error.
+
+```bash
+python roadscene_diagnostics.py \
+  --data-root /path/to/RoadScence \
+  --pretrained pre_trained_models/GLUNet_DPED_CityScape_ADE.pth \
+  --baseline-checkpoint roadscene_runs/sa_ca/best_baseline.pth \
+  --attention-checkpoint roadscene_runs/sa_ca/best_attention.pth \
+  --split val --output roadscene_runs/sa_ca/val_diagnostics
+```
+
+Repeat with `--split train` and a separate output directory to inspect fitting
+failures. This is analysis only; neither split is used to update checkpoints.
