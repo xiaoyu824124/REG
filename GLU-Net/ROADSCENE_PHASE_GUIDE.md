@@ -116,5 +116,8 @@ per-epoch coarse EPE and final arm names; full metrics are in the JSON/CSV.
 If an output directory already has `best_*.pth`, choose a new output path;
 the script refuses to overwrite selected checkpoints.
 
-**No formal PC accuracy or PC-versus-MIND decision has been measured yet.**
-The A4000 run above is needed before reporting that result.
+The formal 20-epoch PC comparison has now been run on the server validation
+set. See `experiments/phase_guide/RESULTS.md` and its `formal_val` artifacts.
+The phase arm improves coarse EPE slightly but worsens final flow EPE and
+fails the precommitted paired and large-displacement rules. Stop this global
+phase guide branch; no follow-up test-set run is authorized by these results.
