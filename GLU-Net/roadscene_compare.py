@@ -47,7 +47,8 @@ def evaluator_hashes():
     root = Path(__file__).parent
     names = ("roadscene_compare.py", "roadscene_metrics.py", "roadscene_coarse.py",
              "datasets/roadscene.py", "models/our_models/GLUNet.py", "crft_adapter.py",
-             "models/our_models/mind.py", "models/our_models/coarse_attention.py",
+             "models/our_models/mind.py", "models/our_models/phase_congruency.py",
+             "models/our_models/coarse_attention.py",
              "models/our_models/coarse_dns.py", "models/feature_backbones/VGG_features.py",
              "roadscene_diagnostics.py")
     return {name: sha256_file(root / name) for name in names}
@@ -57,7 +58,11 @@ def load_glu(pretrained, checkpoint, arm, device):
     attention = arm in {"attention", "mind_a_attention", "mind_b_attention"}
     mind = "a" if arm.startswith("mind_a") else "b" if arm.startswith("mind_b") else None
     dns = arm in {"dns", "dns_contrastive"}
-    model = make_model(pretrained, attention, device, dns=dns, mind=mind)
+    phase = arm == "phase_attention"
+    if phase:
+        attention = True
+    model = make_model(pretrained, attention, device, dns=dns, mind=mind,
+                       phase=phase)
     meta = {"base_sha256": sha256_file(pretrained)}
     if checkpoint:
         payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
@@ -70,6 +75,8 @@ def load_glu(pretrained, checkpoint, arm, device):
             model.coarse_attention.load_state_dict(payload["attention_state_dict"])
         if mind:
             model.coarse_mind.load_state_dict(payload["mind_state_dict"])
+        if phase:
+            model.coarse_phase.load_state_dict(payload["phase_state_dict"])
         if dns:
             model.coarse_dns.load_state_dict(payload["dns_state_dict"])
         meta.update({"path": str(checkpoint), "sha256": sha256_file(checkpoint),
@@ -77,8 +84,8 @@ def load_glu(pretrained, checkpoint, arm, device):
                      "budget": payload.get("budget"),
                      "code_check_only": payload.get("budget", {}).get("code_check", False)})
     else:
-        if mind or dns:
-            raise ValueError("Accuracy comparison requires trained MIND/DNS checkpoint")
+        if mind or dns or phase:
+            raise ValueError("Accuracy comparison requires a trained MIND/DNS/phase checkpoint")
         meta["initialization"] = "base pretrained, no RoadScene decoder fine-tuning"
     return model.eval(), meta
 
@@ -201,7 +208,10 @@ def save_comparison(output, results):
     contrasts = (("baseline", "attention"), ("baseline", "mind_a"),
                  ("baseline", "mind_b"), ("attention", "mind_a"),
                  ("attention", "mind_b"), ("attention", "mind_a_attention"),
-                 ("attention", "mind_b_attention"), ("mind_a", "mind_a_attention"),
+                 ("attention", "mind_b_attention"),
+                 ("attention", "phase_attention"),
+                 ("mind_b_attention", "phase_attention"),
+                 ("mind_a", "mind_a_attention"),
                  ("mind_b", "mind_b_attention"), ("baseline", "dns"),
                  ("dns", "dns_contrastive"), ("attention", "dns_contrastive"),
                  ("attention", "crft"))
@@ -264,7 +274,8 @@ def main():
     arms = [] if args.split == "test" else [("baseline", args.baseline_checkpoint),
                                             ("attention", args.attention_checkpoint)]
     if args.experiment_dir and args.split != "test":
-        for arm in ("mind_a", "mind_a_attention", "mind_b", "mind_b_attention", "dns", "dns_contrastive"):
+        for arm in ("mind_a", "mind_a_attention", "mind_b", "mind_b_attention",
+                    "phase_attention", "dns", "dns_contrastive"):
             path = args.experiment_dir / f"best_{arm}.pth"
             if path.is_file():
                 arms.append((arm, path))

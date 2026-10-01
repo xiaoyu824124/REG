@@ -1,0 +1,39 @@
+{
+  "pair": "000000",
+  "phase_shape": [
+    1,
+    8,
+    256,
+    256
+  ],
+  "coarse_phase_shape": [
+    1,
+    8,
+    16,
+    16
+  ],
+  "coarse_source_range": [
+    0.009218493476510048,
+    0.9200230836868286
+  ],
+  "coarse_target_range": [
+    0.0,
+    0.9045040607452393
+  ],
+  "phase_source_range": [
+    0.0,
+    0.9935647249221802
+  ],
+  "phase_target_range": [
+    0.0,
+    0.99472975730896
+  ],
+  "flat_max": 0.0,
+  "inversion_max_abs_diff": 7.82310962677002e-07,
+  "translated_interior_mae": 0.0018540063174441457,
+  "zero_gate_coarse_flow_max_abs_diff": 0.0,
+  "zero_gate_corr_max_abs_diff": 0.0,
+  "full_model_checked": true,
+  "baseline_repeat_full_flow_max_abs_diff": 0.0,
+  "zero_gate_full_flow_max_abs_diff": 0.0
+}

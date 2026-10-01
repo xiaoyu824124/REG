@@ -29,17 +29,19 @@ def load_base_weights(model, path):
     state = checkpoint.get("state_dict", checkpoint)
     state = {key.removeprefix("module."): value for key, value in state.items()}
     missing, unexpected = model.load_state_dict(state, strict=False)
-    if unexpected or any(not key.startswith(("coarse_attention.", "coarse_dns.", "coarse_mind."))
+    if unexpected or any(not key.startswith(("coarse_attention.", "coarse_dns.", "coarse_mind.", "coarse_phase."))
                          for key in missing):
         raise RuntimeError(f"Incompatible GLU-Net checkpoint: missing={missing}, unexpected={unexpected}")
 
 
-def make_model(checkpoint, attention, device, train_decoder=False, dns=False, mind=None):
+def make_model(checkpoint, attention, device, train_decoder=False, dns=False, mind=None,
+               phase=False):
     if attention and dns:
         raise ValueError("SA/CA and DNS are separate experiment arms")
     model = GLUNet_model(evaluation=False, pyramid_type="VGG",
                         cyclic_consistency=True, coarse_attention=attention,
-                        backbone_pretrained=False, coarse_dns=dns, coarse_mind=mind)
+                        backbone_pretrained=False, coarse_dns=dns, coarse_mind=mind,
+                        coarse_phase=phase)
     load_base_weights(model, checkpoint)
     for parameter in model.parameters():
         parameter.requires_grad_(False)
@@ -54,6 +56,9 @@ def make_model(checkpoint, attention, device, train_decoder=False, dns=False, mi
             parameter.requires_grad_(True)
     if mind:
         for parameter in model.coarse_mind.parameters():
+            parameter.requires_grad_(True)
+    if phase:
+        for parameter in model.coarse_phase.parameters():
             parameter.requires_grad_(True)
     return model.to(device).eval()
 

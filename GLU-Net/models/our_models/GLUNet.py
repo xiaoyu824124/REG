@@ -15,6 +15,7 @@ from .bilinear_deconv import BilinearConvTranspose2d
 from .coarse_attention import CoarseSelfCrossAttention
 from .coarse_dns import CoarseDNS
 from .mind import CoarseMIND
+from .phase_congruency import CoarsePhaseGuide
 
 
 class GLUNet_model(nn.Module):
@@ -27,7 +28,7 @@ class GLUNet_model(nn.Module):
                  batch_norm=True, pyramid_type='VGG', md=4, upfeat_channels=2, dense_connection=True,
                  consensus_network=False, cyclic_consistency=True, decoder_inputs='corr_flow_feat',
                  coarse_attention=False, backbone_pretrained=True, coarse_dns=False,
-                 coarse_mind=None):
+                 coarse_mind=None, coarse_phase=False):
         """
         input: md --- maximum displacement (for correlation. default: 4), after warpping
 
@@ -47,7 +48,10 @@ class GLUNet_model(nn.Module):
                            if coarse_dns else None)
         if coarse_dns and coarse_mind:
             raise ValueError('MIND and DNS must be evaluated separately')
+        if coarse_phase and (coarse_mind or coarse_dns):
+            raise ValueError('Phase guide, MIND, and DNS are separate arms')
         self.coarse_mind = None
+        self.coarse_phase = None
 
         # where to put the refinement networks
         self.refinement_at_all_levels = refinement_at_all_levels
@@ -182,6 +186,11 @@ class GLUNet_model(nn.Module):
                 torch.manual_seed(2026)
                 self.coarse_mind = CoarseMIND(coarse_mind,
                     channels=512 if pyramid_type == 'VGG' else 1024)
+        if coarse_phase:
+            with torch.random.fork_rng(devices=[]):
+                torch.manual_seed(2026)
+                self.coarse_phase = CoarsePhaseGuide(
+                    channels=512 if pyramid_type == 'VGG' else 1024)
 
         self.evaluation=evaluation
 
@@ -313,6 +322,9 @@ class GLUNet_model(nn.Module):
 
     def enrich_coarse_features(self, target_features, source_features,
                                target_input, source_input):
+        if self.coarse_phase is not None:
+            return (self.coarse_phase.residual(target_features, target_input),
+                    self.coarse_phase.residual(source_features, source_input))
         if self.coarse_mind is None:
             return target_features, source_features
         if self.coarse_mind.route == 'a':

@@ -29,9 +29,12 @@ def train_arm(arm, args, train_dataset, val_loader, device):
     # load_glu intentionally refuses untrained MIND accuracy comparisons;
     # training constructs a fresh model directly.
     from roadscene_coarse import make_model
-    attention = arm in {"attention", "mind_a_attention", "mind_b_attention"}
+    attention = arm in {"attention", "mind_a_attention", "mind_b_attention",
+                        "phase_attention"}
     route = "a" if arm.startswith("mind_a") else "b" if arm.startswith("mind_b") else None
-    model = make_model(args.pretrained, attention, device, train_decoder=True, mind=route)
+    phase = arm == "phase_attention"
+    model = make_model(args.pretrained, attention, device, train_decoder=True,
+                       mind=route, phase=phase)
     trainable = [parameter for parameter in model.parameters() if parameter.requires_grad]
     optimizer = torch.optim.AdamW(trainable, lr=args.lr)
     loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True,
@@ -76,6 +79,8 @@ def train_arm(arm, args, train_dataset, val_loader, device):
                 payload["attention_state_dict"] = model.coarse_attention.state_dict()
             if route:
                 payload["mind_state_dict"] = model.coarse_mind.state_dict()
+            if phase:
+                payload["phase_state_dict"] = model.coarse_phase.state_dict()
             torch.save(payload, args.output / f"best_{arm}.pth")
     synchronize()
     costs = {"training_seconds": time.perf_counter() - started,
