@@ -33,7 +33,7 @@ is used only to verify that inserting a zero-gated DNS reproduces its coarse
 flow, correlation and final flow exactly. That check passed locally with
 maximum absolute difference **0** at all three outputs.
 
-Each arm uses the same 176 training pairs, 23 validation pairs, 20 epochs,
+The original plan assigned each arm the same 176 training pairs, 23 validation pairs, 20 epochs,
 batch size 2, seed 2026, AdamW lr 1e-4, image order and `coarse EPE + 2 ×
 correlation CE` loss. No contrastive loss, stratified sampling, displacement
 weighting or local MIND is included. Within each arm the checkpoint with
@@ -52,16 +52,19 @@ centre** and ±64px per-axis radius, final 512px EPE, ≥64px GT-region final
 EPE, per-pair metrics and synchronized inference time. No registration
 module beyond the coarse DNS and pre-existing SA/CA was added.
 
-## Current verification and pending experiment
+## Verification and completed server run
 
 On the local RTX 3060, a one-epoch/two-train-pair/one-validation-pair
 `--code-check` completed all three arms and the full CuPy refinement path.
 The descriptor shape check was `[2,512,8,16,16]` and initial feature
 difference was `0.0`. **These smoke-check losses/EPEs are not research
-results.** Full 20-epoch training and 23-pair validation have not yet been
-run; no DNS improvement is claimed. The user plans to run training on A4000.
+results.** The server subsequently ran all three arms for **50 epochs**,
+with 4,400 matched optimization steps per arm. Its output directory retained
+the name `dns_saca_matched_20`, but the report and checkpoint metadata all
+say 50 epochs. The completed 23-pair validation analysis and archived raw
+results are in [`formal_val_50/RESULTS.md`](formal_val_50/RESULTS.md).
 
-From `GLU-Net` on that server:
+The original planned 20-epoch command was:
 
 ```powershell
 python roadscene_dns_saca.py --data-root 'G:\cxj\RoadScence' --pretrained pre_trained_models\GLUNet_DPED_CityScape_ADE.pth --existing-attention-checkpoint roadscene_runs\phase_matched_20\best_attention.pth --epochs 20 --batch-size 2 --lr 0.0001 --output roadscene_runs\dns_saca_matched_20
