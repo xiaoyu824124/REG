@@ -1,8 +1,10 @@
-"""2D Deep Neighbourhood Self-similarity for 16x16 GLU-Net features.
+"""Shared 2D DNS on GLU-Net's 16x16 deep features.
 
-This adapts the two-ring, centre-free DNS idea of Mok et al. (CVPR 2024)
-from 3D medical images to 2D visible/infrared features. It is not their 3D
-MASR-Net or a reproduction of its anatomy-aware training procedure.
+Adapted from Mok et al., CVPR 2024: centre-free direct and dilated neighbour
+self-similarity followed by learned feature squeezing. The paper uses 3D
+six-neighbourhoods and anatomy-aware contrastive training; this module uses
+2D four-neighbourhoods and a zero-gated residual for pretrained GLU-Net.
+It is not a reproduction of the complete DSIR method.
 """
 
 import torch
@@ -11,48 +13,57 @@ from torch.nn import functional as F
 
 
 class CoarseDNS(nn.Module):
-    """Shared 2D neighbour self-similarity with a zero-initialized residual gate."""
+    """Compute [B,C,8,H,W] DNS, squeeze C, then project back to C channels."""
 
-    def __init__(self, channels=512, hidden=64, radii=(1, 2)):
+    def __init__(self, channels=512, hidden=128, radii=(1, 2), eps=1e-6):
         super().__init__()
+        self.channels = channels
         self.radii = tuple(radii)
+        self.eps = eps
         if not self.radii or any(radius < 1 for radius in self.radii):
             raise ValueError("DNS radii must be positive")
-        descriptor_channels = 4 * len(self.radii)
-        self.squeeze = nn.Sequential(
-            nn.Conv2d(descriptor_channels, hidden, kernel_size=1),
+        self.channel_squeeze = nn.Linear(channels, 1)
+        self.projection = nn.Sequential(
+            nn.Conv2d(4 * len(self.radii), hidden, kernel_size=3, padding=1),
             nn.LeakyReLU(0.1, inplace=True),
-            nn.Conv2d(hidden, channels, kernel_size=3, padding=1),
-        )
+            nn.Conv2d(hidden, channels, kernel_size=3, padding=1))
         self.gate = nn.Parameter(torch.zeros(()))
 
+    @staticmethod
+    def four_neighbours(features, radius):
+        _, _, height, width = features.shape
+        padded = F.pad(features, (radius, radius, radius, radius),
+                       mode="replicate")
+        north = padded[:, :, :height, radius:radius + width]
+        east = padded[:, :, radius:radius + height, 2 * radius:2 * radius + width]
+        south = padded[:, :, 2 * radius:2 * radius + height, radius:radius + width]
+        west = padded[:, :, radius:radius + height, :width]
+        return north, east, south, west
+
     def descriptor(self, features):
-        if features.ndim != 4:
-            raise ValueError("Expected [batch, channels, height, width] features")
+        if features.ndim != 4 or features.shape[1] != self.channels:
+            raise ValueError(f"Expected [B,{self.channels},H,W] features")
         _, _, height, width = features.shape
         descriptors = []
         for radius in self.radii:
             if radius >= min(height, width):
                 raise ValueError("DNS radius must be smaller than the feature map")
-            padded = F.pad(features, (radius, radius, radius, radius),
-                           mode="replicate")
-            north = padded[:, :, :height, radius:radius + width]
-            east = padded[:, :, radius:radius + height, 2 * radius:2 * radius + width]
-            south = padded[:, :, 2 * radius:2 * radius + height, radius:radius + width]
-            west = padded[:, :, radius:radius + height, :width]
-            # Pair neighbours around the centre; the centre feature is excluded.
-            neighbours = (north, east, south, west)
-            squared_distances = [
-                (neighbours[index] - neighbours[(index + 1) % 4]).square().mean(dim=1)
-                for index in range(4)
-            ]
-            distances = torch.stack(squared_distances, dim=1)
-            noise_scale = distances.mean(dim=1, keepdim=True).clamp_min(1e-6)
-            descriptors.append(torch.exp(-distances / noise_scale))
-        return torch.cat(descriptors, dim=1)
+            north, east, south, west = self.four_neighbours(features, radius)
+            # Each pair has Euclidean offset sqrt(2)*radius; the centre is
+            # excluded. Keep all deep feature channels until squeezing.
+            distances = torch.stack(((north - east).square(),
+                                     (east - south).square(),
+                                     (south - west).square(),
+                                     (west - north).square()), dim=2)
+            noise = distances.mean(dim=2, keepdim=True).clamp_min(self.eps)
+            descriptors.append(torch.exp(-distances / noise))
+        return torch.cat(descriptors, dim=2)
 
     def forward_one(self, features):
-        structure = self.squeeze(self.descriptor(features))
+        descriptor = self.descriptor(features)  # [B,C,P,H,W]
+        squeezed = self.channel_squeeze(
+            descriptor.permute(0, 2, 3, 4, 1)).squeeze(-1)  # [B,P,H,W]
+        structure = self.projection(squeezed)  # [B,C,H,W]
         return features + self.gate * structure
 
     def forward(self, target, source):

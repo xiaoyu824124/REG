@@ -55,9 +55,10 @@ def evaluator_hashes():
 
 
 def load_glu(pretrained, checkpoint, arm, device):
-    attention = arm in {"attention", "mind_a_attention", "mind_b_attention"}
+    attention = arm in {"attention", "mind_a_attention", "mind_b_attention",
+                        "dns_attention"}
     mind = "a" if arm.startswith("mind_a") else "b" if arm.startswith("mind_b") else None
-    dns = arm in {"dns", "dns_contrastive"}
+    dns = arm in {"dns", "dns_contrastive", "dns_attention"}
     phase = arm == "phase_attention"
     if phase:
         attention = True

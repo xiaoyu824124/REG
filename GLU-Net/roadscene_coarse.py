@@ -36,8 +36,6 @@ def load_base_weights(model, path):
 
 def make_model(checkpoint, attention, device, train_decoder=False, dns=False, mind=None,
                phase=False):
-    if attention and dns:
-        raise ValueError("SA/CA and DNS are separate experiment arms")
     model = GLUNet_model(evaluation=False, pyramid_type="VGG",
                         cyclic_consistency=True, coarse_attention=attention,
                         backbone_pretrained=False, coarse_dns=dns, coarse_mind=mind,

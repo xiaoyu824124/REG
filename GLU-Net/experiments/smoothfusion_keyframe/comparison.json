@@ -1,0 +1,461 @@
+{
+  "split": "val",
+  "protocol": {
+    "version": 1,
+    "name": "SmoothFusion keyframe registration versus selected GLU-Net+SA/CA",
+    "direction": "visible target -> warped infrared source",
+    "input": "same RoadScene native 512x512 uint8 RGB source and target; each model applies its original preprocessing",
+    "output": "dense target-to-source displacement at 512x512 in image pixels",
+    "gt": "the same RoadScene .flo target-to-source flow",
+    "valid_mask": "finite GT and GT-mapped source coordinate inside the image, independent of prediction",
+    "weighted_epe": "sum valid pixel EPE divided by count valid pixels",
+    "pair_aepe": "per-pair mean valid pixel EPE; pair mean is unweighted arithmetic mean",
+    "batch_size": 1,
+    "warmup_forwards": 3,
+    "timed_repeats_per_pair": 5,
+    "timing": "median of five synchronized on-device forwards per pair, including model preprocessing and 512px output, excluding disk IO, GT transfer and metrics",
+    "precision": "float32, no autocast",
+    "selection": "no model or hyperparameter selection on independent test"
+  },
+  "evaluator_hashes": {
+    "roadscene_smoothfusion.py": "21350cebb7972ba79c1ea720374ca27c542e2c0bb117be49d62d3b9e8204680d",
+    "roadscene_metrics.py": "6d8a1bea610c26e383ca492cbcbdcb6a3350634511b672ad1d283076a5074cb3",
+    "datasets/roadscene.py": "9e409d687754025a7ac73e94b8d3d2e0483c9f36f495868c8547975bd20ba699"
+  },
+  "pair_manifest_sha256": "b515e2a7b7758756d1db5c001a3893e6e0e3e320d321d1b893f545f232b42553",
+  "summary": {
+    "smoothfusion_keyframe": {
+      "samples": 23,
+      "valid_pixels_full": 5413286,
+      "final_flow_epe_512px": 32.93877597770472,
+      "aepe_pair_mean_512px": 34.42561253254631,
+      "cmr_pair_percent": {
+        "5": 21.73913043478261,
+        "4": 8.695652173913043,
+        "3": 4.3478260869565215,
+        "2": 0.0,
+        "1": 0.0,
+        "0.9": 0.0,
+        "0.8": 0.0,
+        "0.7": 0.0,
+        "0.6": 0.0,
+        "0.5": 0.0,
+        "0.4": 0.0,
+        "0.3": 0.0,
+        "0.2": 0.0,
+        "0.1": 0.0
+      },
+      "pixel_success_percent_auxiliary": {
+        "5": 33.12743867588005,
+        "4": 27.01525469003485,
+        "3": 19.39062521359485,
+        "2": 11.165140729678795,
+        "1": 3.249892948571348,
+        "0.9": 2.6440132666184644,
+        "0.8": 2.08538769242933,
+        "0.7": 1.600728282230054,
+        "0.6": 1.1705274762870463,
+        "0.5": 0.7958012933364319,
+        "0.4": 0.4995117568146224,
+        "0.3": 0.27305041706645466,
+        "0.2": 0.11728550828461677,
+        "0.1": 0.030517508219591576
+      },
+      "inference_ms_mean_pair_median": 73.4707478373109,
+      "by_gt_displacement_512px": {
+        "0-8": {
+          "valid_pixels": 445228,
+          "epe_512px": 4.12132855883779
+        },
+        "8-16": {
+          "valid_pixels": 466996,
+          "epe_512px": 5.198529000890583
+        },
+        "16-32": {
+          "valid_pixels": 482599,
+          "epe_512px": 10.536890076460445
+        },
+        "32-64": {
+          "valid_pixels": 1065618,
+          "epe_512px": 14.585393635128815
+        },
+        "64+": {
+          "valid_pixels": 2952845,
+          "epe_512px": 51.955602521521705
+        }
+      }
+    },
+    "attention": {
+      "samples": 23,
+      "valid_pixels_full": 5413286,
+      "final_flow_epe_512px": 11.724941371499419,
+      "aepe_pair_mean_512px": 12.19757925640201,
+      "cmr_pair_percent": {
+        "5": 39.130434782608695,
+        "4": 8.695652173913043,
+        "3": 0.0,
+        "2": 0.0,
+        "1": 0.0,
+        "0.9": 0.0,
+        "0.8": 0.0,
+        "0.7": 0.0,
+        "0.6": 0.0,
+        "0.5": 0.0,
+        "0.4": 0.0,
+        "0.3": 0.0,
+        "0.2": 0.0,
+        "0.1": 0.0
+      },
+      "pixel_success_percent_auxiliary": {
+        "5": 49.32486478637929,
+        "4": 41.13298281302706,
+        "3": 30.32267277213877,
+        "2": 17.075469502257963,
+        "1": 5.000936584544028,
+        "0.9": 4.063336021780486,
+        "0.8": 3.2212966394164284,
+        "0.7": 2.46190576296911,
+        "0.6": 1.7871769568428493,
+        "0.5": 1.2237299119241067,
+        "0.4": 0.7555115321821164,
+        "0.3": 0.3998310822668523,
+        "0.2": 0.17111602823128133,
+        "0.1": 0.04529596256321946
+      },
+      "inference_ms_mean_pair_median": 73.81632608746219,
+      "by_gt_displacement_512px": {
+        "0-8": {
+          "valid_pixels": 445228,
+          "epe_512px": 4.079409820122012
+        },
+        "8-16": {
+          "valid_pixels": 466996,
+          "epe_512px": 4.774812986203967
+        },
+        "16-32": {
+          "valid_pixels": 482599,
+          "epe_512px": 7.046585791507409
+        },
+        "32-64": {
+          "valid_pixels": 1065618,
+          "epe_512px": 8.092487379037014
+        },
+        "64+": {
+          "valid_pixels": 2952845,
+          "epe_512px": 16.052383197963202
+        }
+      }
+    }
+  },
+  "methods": {
+    "smoothfusion_keyframe": {
+      "model": {
+        "name": "SmoothFusion keyframe registration module",
+        "source_root": "E:\\res and fus\\SmoothFusion",
+        "source_hashes": {
+          "AKRF/model/reg/__init__.py": "870bcd6e3fafd55c8522e090c4e867a85dc1d6087f371757abb8b673cb15dc65",
+          "AKRF/model/reg/GLUNet/.ipynb_checkpoints/test_GLUNet-checkpoint.py": "0296fb8abe195de561e60d9ee78ebf13474d298bf108a8667f3618cfa8e7019e",
+          "AKRF/model/reg/GLUNet/models/.ipynb_checkpoints/__init__-checkpoint.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/GLUNet/models/.ipynb_checkpoints/models_compared-checkpoint.py": "35205b09549bc1b0c0dfcf385cd2f259ba36d75464fa02172fc21fd787520679",
+          "AKRF/model/reg/GLUNet/models/.ipynb_checkpoints/util-checkpoint.py": "5d66ba4ce9aa033a61735de729b61fcdef6f0a0f9aedd7ebe9e9ec99175887e3",
+          "AKRF/model/reg/GLUNet/models/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/GLUNet/models/correlation/.ipynb_checkpoints/__init__-checkpoint.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/GLUNet/models/correlation/.ipynb_checkpoints/correlation-checkpoint.py": "709d4dd7b88014fe4bbae0485fba2b8f9d8e711679e078c029874e74dfb32e2e",
+          "AKRF/model/reg/GLUNet/models/correlation/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/GLUNet/models/correlation/correlation.py": "709d4dd7b88014fe4bbae0485fba2b8f9d8e711679e078c029874e74dfb32e2e",
+          "AKRF/model/reg/GLUNet/models/feature_backbones/.ipynb_checkpoints/__init__-checkpoint.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/GLUNet/models/feature_backbones/.ipynb_checkpoints/ResNet_features-checkpoint.py": "f5df0114246ec8d79c31beb6b7a3d686f114606f7ee9aa78e38f02912cc03332",
+          "AKRF/model/reg/GLUNet/models/feature_backbones/.ipynb_checkpoints/VGG_features-checkpoint.py": "e873b29ff50da05285204324e08c5b33c0a09428eb422a08d658a2029f75a06f",
+          "AKRF/model/reg/GLUNet/models/feature_backbones/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/GLUNet/models/feature_backbones/ResNet_features.py": "f5df0114246ec8d79c31beb6b7a3d686f114606f7ee9aa78e38f02912cc03332",
+          "AKRF/model/reg/GLUNet/models/feature_backbones/VGG_features.py": "e873b29ff50da05285204324e08c5b33c0a09428eb422a08d658a2029f75a06f",
+          "AKRF/model/reg/GLUNet/models/models_compared.py": "35205b09549bc1b0c0dfcf385cd2f259ba36d75464fa02172fc21fd787520679",
+          "AKRF/model/reg/GLUNet/models/our_models/.ipynb_checkpoints/__init__-checkpoint.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/GLUNet/models/our_models/.ipynb_checkpoints/bilinear_deconv-checkpoint.py": "689992719def435d00caf313e011347c6de2faa7d3d704e1b36551db672c514f",
+          "AKRF/model/reg/GLUNet/models/our_models/.ipynb_checkpoints/consensus_network_modules-checkpoint.py": "60c5070ec5b9c2089b162031d6a6fe7d5f32725a05c5e4c013be5ef60072df1e",
+          "AKRF/model/reg/GLUNet/models/our_models/.ipynb_checkpoints/GLUNet-checkpoint.py": "0dcf0831b09fb9650de8c3bcdbc28cb125edffb8213172c60d3a2371b026dfc8",
+          "AKRF/model/reg/GLUNet/models/our_models/.ipynb_checkpoints/mod-checkpoint.py": "bd883f0a8cc660c7d25a8c2acdf2867a36397002c55e39d2c8dbfc9ec77874cc",
+          "AKRF/model/reg/GLUNet/models/our_models/.ipynb_checkpoints/Semantic_GLUNet-checkpoint.py": "a573c000676a7b3c01bbd434f70dcbb1a46290c52bc70b30805e769b05e472d8",
+          "AKRF/model/reg/GLUNet/models/our_models/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/GLUNet/models/our_models/bilinear_deconv.py": "689992719def435d00caf313e011347c6de2faa7d3d704e1b36551db672c514f",
+          "AKRF/model/reg/GLUNet/models/our_models/consensus_network_modules.py": "60c5070ec5b9c2089b162031d6a6fe7d5f32725a05c5e4c013be5ef60072df1e",
+          "AKRF/model/reg/GLUNet/models/our_models/GLUNet.py": "0dcf0831b09fb9650de8c3bcdbc28cb125edffb8213172c60d3a2371b026dfc8",
+          "AKRF/model/reg/GLUNet/models/our_models/mod.py": "bd883f0a8cc660c7d25a8c2acdf2867a36397002c55e39d2c8dbfc9ec77874cc",
+          "AKRF/model/reg/GLUNet/models/our_models/Semantic_GLUNet.py": "a573c000676a7b3c01bbd434f70dcbb1a46290c52bc70b30805e769b05e472d8",
+          "AKRF/model/reg/GLUNet/models/util.py": "5d66ba4ce9aa033a61735de729b61fcdef6f0a0f9aedd7ebe9e9ec99175887e3",
+          "AKRF/model/reg/GLUNet/test_GLUNet.py": "0296fb8abe195de561e60d9ee78ebf13474d298bf108a8667f3618cfa8e7019e",
+          "AKRF/model/reg/GLUNet/utils/.ipynb_checkpoints/__init__-checkpoint.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/GLUNet/utils/.ipynb_checkpoints/co_flow_and_images_transforms-checkpoint.py": "5c210edad99f92ed6ce4abbef452b51ba3cc7ceaa4132f8eb0aa9c2a5bae829b",
+          "AKRF/model/reg/GLUNet/utils/.ipynb_checkpoints/evaluate-checkpoint.py": "b213211ebe1b9ccbc2acbd6ae23ddc46250088f42e449f58f99e06eed8733626",
+          "AKRF/model/reg/GLUNet/utils/.ipynb_checkpoints/image_transforms-checkpoint.py": "eaded1740dd9c18fc7eef18dcf0d6199eabcc1f6b48eedfdc415d6974808a2be",
+          "AKRF/model/reg/GLUNet/utils/.ipynb_checkpoints/io-checkpoint.py": "cf3b8cf02cb3da66162f8d82c3e7c04cea6ef0b5c614d25d4221639e3ba6e02b",
+          "AKRF/model/reg/GLUNet/utils/.ipynb_checkpoints/pixel_wise_mapping-checkpoint.py": "e82b0fd0d0b86cb1398dd26e48417751a7f3a8aa500b8a474c69723bfe9276cb",
+          "AKRF/model/reg/GLUNet/utils/.ipynb_checkpoints/plot-checkpoint.py": "149ff50da23db1482d13706f0e2ab7e0d678fd8eb6c804edd338aff1cef585e4",
+          "AKRF/model/reg/GLUNet/utils/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/GLUNet/utils/co_flow_and_images_transforms.py": "5c210edad99f92ed6ce4abbef452b51ba3cc7ceaa4132f8eb0aa9c2a5bae829b",
+          "AKRF/model/reg/GLUNet/utils/evaluate.py": "b213211ebe1b9ccbc2acbd6ae23ddc46250088f42e449f58f99e06eed8733626",
+          "AKRF/model/reg/GLUNet/utils/image_transforms.py": "eaded1740dd9c18fc7eef18dcf0d6199eabcc1f6b48eedfdc415d6974808a2be",
+          "AKRF/model/reg/GLUNet/utils/io.py": "cf3b8cf02cb3da66162f8d82c3e7c04cea6ef0b5c614d25d4221639e3ba6e02b",
+          "AKRF/model/reg/GLUNet/utils/pixel_wise_mapping.py": "e82b0fd0d0b86cb1398dd26e48417751a7f3a8aa500b8a474c69723bfe9276cb",
+          "AKRF/model/reg/GLUNet/utils/plot.py": "149ff50da23db1482d13706f0e2ab7e0d678fd8eb6c804edd338aff1cef585e4",
+          "AKRF/model/reg/MatchFormer/.ipynb_checkpoints/__init__-checkpoint.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/MatchFormer/.ipynb_checkpoints/matchformer-checkpoint.py": "bf1e175daed5da9dba571bc6f37a6aa75472051568a05ebef6b66a07f09a6a96",
+          "AKRF/model/reg/MatchFormer/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/MatchFormer/backbone/.ipynb_checkpoints/__init__-checkpoint.py": "432da55f9ccb3b5c3346b4cd79e6a3aac7c94ac6c57d806fd705358dbbf255b4",
+          "AKRF/model/reg/MatchFormer/backbone/.ipynb_checkpoints/coarse_matching-checkpoint.py": "c856c8a5a4133c4aeb2f55de0fbc052ffcc036959e6d4e78e407f374a4040819",
+          "AKRF/model/reg/MatchFormer/backbone/.ipynb_checkpoints/fine_matching-checkpoint.py": "823dd17053a8559f7b1ca32e41b46552c587c295ae1ab988ad75d2c91448cf3a",
+          "AKRF/model/reg/MatchFormer/backbone/.ipynb_checkpoints/fine_preprocess-checkpoint.py": "1eeb83778a4c50b5752ff37d2b8ac72d76706ea4fe3bc222ab8c47263279fafe",
+          "AKRF/model/reg/MatchFormer/backbone/.ipynb_checkpoints/match_SEA_lite-checkpoint.py": "4b6b3ec96af6a5112b9118ca02717887fa3de41737c47e3d613817f7d667e9a1",
+          "AKRF/model/reg/MatchFormer/backbone/__init__.py": "432da55f9ccb3b5c3346b4cd79e6a3aac7c94ac6c57d806fd705358dbbf255b4",
+          "AKRF/model/reg/MatchFormer/backbone/coarse_matching.py": "c856c8a5a4133c4aeb2f55de0fbc052ffcc036959e6d4e78e407f374a4040819",
+          "AKRF/model/reg/MatchFormer/backbone/fine_matching.py": "823dd17053a8559f7b1ca32e41b46552c587c295ae1ab988ad75d2c91448cf3a",
+          "AKRF/model/reg/MatchFormer/backbone/fine_preprocess.py": "1eeb83778a4c50b5752ff37d2b8ac72d76706ea4fe3bc222ab8c47263279fafe",
+          "AKRF/model/reg/MatchFormer/backbone/match_SEA_lite.py": "4b6b3ec96af6a5112b9118ca02717887fa3de41737c47e3d613817f7d667e9a1",
+          "AKRF/model/reg/MatchFormer/config/.ipynb_checkpoints/__init__-checkpoint.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/MatchFormer/config/.ipynb_checkpoints/defaultmf-checkpoint.py": "058422a52adce79885e7b3c5af4cfa39a552929016f975760268afc3877d466f",
+          "AKRF/model/reg/MatchFormer/config/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/MatchFormer/config/data/.ipynb_checkpoints/__init__-checkpoint.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/MatchFormer/config/data/.ipynb_checkpoints/base-checkpoint.py": "5a84a34112565b90df67bcfc686edf08c6b72125a0667113226a73e6e5d23a0f",
+          "AKRF/model/reg/MatchFormer/config/data/.ipynb_checkpoints/megadepth_test_1500-checkpoint.py": "18d0006c41f0d6815fcc6eb1c690cb0fba4056a185805ccf68d4633cde5799a2",
+          "AKRF/model/reg/MatchFormer/config/data/.ipynb_checkpoints/scannet_test_1500-checkpoint.py": "87add7374bbda4a8104b4704084791483afa92e8963fed1619510ff850fb8f04",
+          "AKRF/model/reg/MatchFormer/config/data/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "AKRF/model/reg/MatchFormer/config/data/base.py": "5a84a34112565b90df67bcfc686edf08c6b72125a0667113226a73e6e5d23a0f",
+          "AKRF/model/reg/MatchFormer/config/data/megadepth_test_1500.py": "18d0006c41f0d6815fcc6eb1c690cb0fba4056a185805ccf68d4633cde5799a2",
+          "AKRF/model/reg/MatchFormer/config/data/scannet_test_1500.py": "87add7374bbda4a8104b4704084791483afa92e8963fed1619510ff850fb8f04",
+          "AKRF/model/reg/MatchFormer/config/defaultmf.py": "058422a52adce79885e7b3c5af4cfa39a552929016f975760268afc3877d466f",
+          "AKRF/model/reg/MatchFormer/matchformer.py": "bf1e175daed5da9dba571bc6f37a6aa75472051568a05ebef6b66a07f09a6a96"
+        },
+        "pretrained_sha256": "2eac424ee4c9998cafed7ca60e7181d9f54adcee7e8e71250c5f2c7c0c9e50b1",
+        "weight_path": "E:\\res and fus\\SmoothFusion\\AKRF\\model\\reg\\GLUNet\\pre_trained_models\\GLUNet_DPED_CityScape_ADE.pth",
+        "training_data": "GLU-Net DPED/CityScape/ADE pretraining; no RoadScene registration fine-tune"
+      },
+      "parameters": 13590488
+    },
+    "attention": {
+      "model": {
+        "name": "GLU-Net+SA/CA",
+        "source_hashes": {
+          "roadscene_compare.py": "73b836a264c52c90e0b12c7351af0ccb197924aad2cd2498538a75086e83edc0",
+          "roadscene_coarse.py": "27544e8ef67163e73ae408f7404b57dfd4dd6566e491f209c5c8bcfa417c32c7",
+          "models/our_models/GLUNet.py": "1d7c85bd1dbb0596f7d94b83ac28b023a2424a9059fe5faa26a076d8f39eedf1",
+          "models/our_models/coarse_attention.py": "6cfe2a28b7f81be89a95abb9223d810333cda97117d538b94f3c3c76c0cf5caf"
+        },
+        "pretrained_sha256": "2eac424ee4c9998cafed7ca60e7181d9f54adcee7e8e71250c5f2c7c0c9e50b1",
+        "weight_path": "pre_trained_models\\GLUNet_DPED_CityScape_ADE.pth",
+        "attention_checkpoint_path": "roadscene_runs\\phase_matched_20\\best_attention.pth",
+        "attention_checkpoint_sha256": "3d5550b78f8492e85c9f3c69a5767ba311b46c7b76732a362b130fd1bf56edbd",
+        "training_data": "same GLU-Net base plus 20-epoch RoadScene train-split decoder4 and SA/CA fine-tuning"
+      },
+      "parameters": 16744921
+    }
+  },
+  "per_image": [
+    {
+      "name": "000000",
+      "valid_pixels": 251162,
+      "smoothfusion_keyframe_epe_512px": 9.016740199370178,
+      "attention_epe_512px": 4.463845724493662,
+      "smooth_minus_attention_epe_512px": 4.552894474876516,
+      "smoothfusion_keyframe_ms": 71.42650010064244,
+      "attention_ms": 76.86010003089905
+    },
+    {
+      "name": "000001",
+      "valid_pixels": 259362,
+      "smoothfusion_keyframe_epe_512px": 4.105647131951685,
+      "attention_epe_512px": 4.4930580010391745,
+      "smooth_minus_attention_epe_512px": -0.3874108690874891,
+      "smoothfusion_keyframe_ms": 71.0054999217391,
+      "attention_ms": 76.42059994395822
+    },
+    {
+      "name": "000002",
+      "valid_pixels": 237723,
+      "smoothfusion_keyframe_epe_512px": 124.0486963017422,
+      "attention_epe_512px": 25.81871962599295,
+      "smooth_minus_attention_epe_512px": 98.22997667574924,
+      "smoothfusion_keyframe_ms": 75.47239994164556,
+      "attention_ms": 78.01229995675385
+    },
+    {
+      "name": "000003",
+      "valid_pixels": 262144,
+      "smoothfusion_keyframe_epe_512px": 4.005626229423317,
+      "attention_epe_512px": 5.782365883252815,
+      "smooth_minus_attention_epe_512px": -1.7767396538294982,
+      "smoothfusion_keyframe_ms": 75.84229996427894,
+      "attention_ms": 74.57349996548146
+    },
+    {
+      "name": "000004",
+      "valid_pixels": 223888,
+      "smoothfusion_keyframe_epe_512px": 8.331792841714893,
+      "attention_epe_512px": 7.252613647987125,
+      "smooth_minus_attention_epe_512px": 1.0791791937277688,
+      "smoothfusion_keyframe_ms": 77.71450001746416,
+      "attention_ms": 74.86499997321516
+    },
+    {
+      "name": "000005",
+      "valid_pixels": 241569,
+      "smoothfusion_keyframe_epe_512px": 22.491600776605118,
+      "attention_epe_512px": 4.593266139181435,
+      "smooth_minus_attention_epe_512px": 17.898334637423684,
+      "smoothfusion_keyframe_ms": 76.5325000975281,
+      "attention_ms": 76.8205999629572
+    },
+    {
+      "name": "000006",
+      "valid_pixels": 251960,
+      "smoothfusion_keyframe_epe_512px": 5.36659478171055,
+      "attention_epe_512px": 5.54437572635309,
+      "smooth_minus_attention_epe_512px": -0.17778094464254046,
+      "smoothfusion_keyframe_ms": 75.71370003279299,
+      "attention_ms": 75.62020001932979
+    },
+    {
+      "name": "000007",
+      "valid_pixels": 216766,
+      "smoothfusion_keyframe_epe_512px": 117.45235509756242,
+      "attention_epe_512px": 22.31198407566331,
+      "smooth_minus_attention_epe_512px": 95.14037102189911,
+      "smoothfusion_keyframe_ms": 75.28370001818985,
+      "attention_ms": 77.96799996867776
+    },
+    {
+      "name": "000008",
+      "valid_pixels": 245584,
+      "smoothfusion_keyframe_epe_512px": 21.25774294070396,
+      "attention_epe_512px": 4.153513778452577,
+      "smooth_minus_attention_epe_512px": 17.104229162251382,
+      "smoothfusion_keyframe_ms": 74.39339999109507,
+      "attention_ms": 72.09890009835362
+    },
+    {
+      "name": "000009",
+      "valid_pixels": 227326,
+      "smoothfusion_keyframe_epe_512px": 52.23258720675611,
+      "attention_epe_512px": 43.65890068886519,
+      "smooth_minus_attention_epe_512px": 8.57368651789092,
+      "smoothfusion_keyframe_ms": 70.18330006394535,
+      "attention_ms": 71.08929997775704
+    },
+    {
+      "name": "000010",
+      "valid_pixels": 247230,
+      "smoothfusion_keyframe_epe_512px": 32.692550010528876,
+      "attention_epe_512px": 7.608548788780578,
+      "smooth_minus_attention_epe_512px": 25.0840012217483,
+      "smoothfusion_keyframe_ms": 75.64619998447597,
+      "attention_ms": 71.82119996286929
+    },
+    {
+      "name": "000011",
+      "valid_pixels": 217437,
+      "smoothfusion_keyframe_epe_512px": 45.43521360296586,
+      "attention_epe_512px": 6.05053783782257,
+      "smooth_minus_attention_epe_512px": 39.38467576514329,
+      "smoothfusion_keyframe_ms": 76.81300002150238,
+      "attention_ms": 71.70390000101179
+    },
+    {
+      "name": "000012",
+      "valid_pixels": 247230,
+      "smoothfusion_keyframe_epe_512px": 41.949575602132576,
+      "attention_epe_512px": 17.302822243185325,
+      "smooth_minus_attention_epe_512px": 24.64675335894725,
+      "smoothfusion_keyframe_ms": 71.92230003420264,
+      "attention_ms": 73.81670002359897
+    },
+    {
+      "name": "000013",
+      "valid_pixels": 251754,
+      "smoothfusion_keyframe_epe_512px": 2.595937993094548,
+      "attention_epe_512px": 4.080322348633704,
+      "smooth_minus_attention_epe_512px": -1.4843843555391558,
+      "smoothfusion_keyframe_ms": 71.18349999655038,
+      "attention_ms": 75.18149993848056
+    },
+    {
+      "name": "000014",
+      "valid_pixels": 205800,
+      "smoothfusion_keyframe_epe_512px": 83.55566013079111,
+      "attention_epe_512px": 48.133037972134595,
+      "smooth_minus_attention_epe_512px": 35.422622158656516,
+      "smoothfusion_keyframe_ms": 73.84810002986342,
+      "attention_ms": 72.30490003712475
+    },
+    {
+      "name": "000015",
+      "valid_pixels": 206068,
+      "smoothfusion_keyframe_epe_512px": 92.39298401882326,
+      "attention_epe_512px": 28.824512292608194,
+      "smooth_minus_attention_epe_512px": 63.568471726215066,
+      "smoothfusion_keyframe_ms": 72.1738999709487,
+      "attention_ms": 72.40830000955611
+    },
+    {
+      "name": "000016",
+      "valid_pixels": 211724,
+      "smoothfusion_keyframe_epe_512px": 25.3303073320956,
+      "attention_epe_512px": 4.0736941037912935,
+      "smooth_minus_attention_epe_512px": 21.256613228304307,
+      "smoothfusion_keyframe_ms": 71.48530008271337,
+      "attention_ms": 72.32809998095036
+    },
+    {
+      "name": "000017",
+      "valid_pixels": 236196,
+      "smoothfusion_keyframe_epe_512px": 4.587142315209306,
+      "attention_epe_512px": 3.593556145150024,
+      "smooth_minus_attention_epe_512px": 0.9935861700592818,
+      "smoothfusion_keyframe_ms": 72.47399992775172,
+      "attention_ms": 72.28800002485514
+    },
+    {
+      "name": "000018",
+      "valid_pixels": 221774,
+      "smoothfusion_keyframe_epe_512px": 5.940164859746456,
+      "attention_epe_512px": 4.554658547377913,
+      "smooth_minus_attention_epe_512px": 1.385506312368543,
+      "smoothfusion_keyframe_ms": 72.9861999861896,
+      "attention_ms": 71.58570003230125
+    },
+    {
+      "name": "000019",
+      "valid_pixels": 221774,
+      "smoothfusion_keyframe_epe_512px": 34.60289821246531,
+      "attention_epe_512px": 7.8743253366792825,
+      "smooth_minus_attention_epe_512px": 26.72857287578603,
+      "smoothfusion_keyframe_ms": 72.40050006657839,
+      "attention_ms": 71.1874000262469
+    },
+    {
+      "name": "000020",
+      "valid_pixels": 249022,
+      "smoothfusion_keyframe_epe_512px": 9.69727621806142,
+      "attention_epe_512px": 5.103416009204568,
+      "smooth_minus_attention_epe_512px": 4.593860208856852,
+      "smoothfusion_keyframe_ms": 71.40679995063692,
+      "attention_ms": 70.73700008913875
+    },
+    {
+      "name": "000021",
+      "valid_pixels": 224679,
+      "smoothfusion_keyframe_epe_512px": 40.89349047556043,
+      "attention_epe_512px": 11.933182546462657,
+      "smooth_minus_attention_epe_512px": 28.96030792909777,
+      "smoothfusion_keyframe_ms": 72.94610003009439,
+      "attention_ms": 74.291400029324
+    },
+    {
+      "name": "000022",
+      "valid_pixels": 255114,
+      "smoothfusion_keyframe_epe_512px": 3.8065039695499414,
+      "attention_epe_512px": 3.3390654341341595,
+      "smooth_minus_attention_epe_512px": 0.46743853541578195,
+      "smoothfusion_keyframe_ms": 70.97350002732128,
+      "attention_ms": 73.79289995878935
+    }
+  ]
+}

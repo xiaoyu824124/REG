@@ -42,8 +42,6 @@ class GLUNet_model(nn.Module):
         self.coarse_attention = (CoarseSelfCrossAttention(
             channels=512 if pyramid_type == 'VGG' else 1024)
             if coarse_attention else None)
-        if coarse_attention and coarse_dns:
-            raise ValueError('SA/CA and DNS must be evaluated separately')
         self.coarse_dns = (CoarseDNS(channels=512 if pyramid_type == 'VGG' else 1024)
                            if coarse_dns else None)
         if coarse_dns and coarse_mind:
@@ -337,10 +335,10 @@ class GLUNet_model(nn.Module):
         ratio_x = 16.0 / float(w_256)
         ratio_y = 16.0 / float(h_256)
         b = c24.shape[0]
-        if self.coarse_attention is not None:
-            c14, c24 = self.coarse_attention(c14, c24)
         if self.coarse_dns is not None:
             c14, c24 = self.coarse_dns(c14, c24)
+        if self.coarse_attention is not None:
+            c14, c24 = self.coarse_attention(c14, c24)
         if self.cyclic_consistency:
             corr4d = self.corr(self.l2norm(c24), self.l2norm(c14))  # first source, then target
             # run match processing model
