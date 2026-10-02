@@ -29,7 +29,7 @@ def load_base_weights(model, path):
     state = checkpoint.get("state_dict", checkpoint)
     state = {key.removeprefix("module."): value for key, value in state.items()}
     missing, unexpected = model.load_state_dict(state, strict=False)
-    if unexpected or any(not key.startswith(("coarse_attention.", "coarse_dns.", "coarse_mind.", "coarse_phase."))
+    if unexpected or any(not key.startswith(("coarse_attention.", "coarse_dns.", "coarse_mind.", "coarse_phase.", "local_dcn32."))
                          for key in missing):
         raise RuntimeError(f"Incompatible GLU-Net checkpoint: missing={missing}, unexpected={unexpected}")
 

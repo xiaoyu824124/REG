@@ -16,6 +16,7 @@ from .coarse_attention import CoarseSelfCrossAttention
 from .coarse_dns import CoarseDNS
 from .mind import CoarseMIND
 from .phase_congruency import CoarsePhaseGuide
+from .local_dcn import LocalDeformableFlowUpdate
 
 
 class GLUNet_model(nn.Module):
@@ -28,7 +29,7 @@ class GLUNet_model(nn.Module):
                  batch_norm=True, pyramid_type='VGG', md=4, upfeat_channels=2, dense_connection=True,
                  consensus_network=False, cyclic_consistency=True, decoder_inputs='corr_flow_feat',
                  coarse_attention=False, backbone_pretrained=True, coarse_dns=False,
-                 coarse_mind=None, coarse_phase=False):
+                 coarse_mind=None, coarse_phase=False, local_dcn_steps=0):
         """
         input: md --- maximum displacement (for correlation. default: 4), after warpping
 
@@ -50,6 +51,13 @@ class GLUNet_model(nn.Module):
             raise ValueError('Phase guide, MIND, and DNS are separate arms')
         self.coarse_mind = None
         self.coarse_phase = None
+        if local_dcn_steps not in (0, 1, 2, 3):
+            raise ValueError('local_dcn_steps must be 0, 1, 2, or 3')
+        if local_dcn_steps and div != 1.0:
+            raise ValueError('Local DCN uses image-pixel flow and requires div=1')
+        self.local_dcn_steps = local_dcn_steps
+        self.local_dcn32 = (LocalDeformableFlowUpdate()
+                            if local_dcn_steps else None)
 
         # where to put the refinement networks
         self.refinement_at_all_levels = refinement_at_all_levels
@@ -170,6 +178,13 @@ class GLUNet_model(nn.Module):
                 nn.init.kaiming_normal_(m.weight.data, mode='fan_in')
                 if m.bias is not None:
                     m.bias.data.zero_()
+
+        # The legacy model-wide Conv2d initializer above also visits new DCN
+        # predictor heads. Restore exact identity and zero offsets afterwards.
+        if self.local_dcn32 is not None:
+            for layer in (self.local_dcn32.offset, self.local_dcn32.delta):
+                nn.init.zeros_(layer.weight)
+                nn.init.zeros_(layer.bias)
 
         if pyramid_type == 'ResNet':
             self.pyramid = ResNetPyramid(pretrained=backbone_pretrained)
@@ -364,7 +379,8 @@ class GLUNet_model(nn.Module):
         flow4[:, 1, :, :] /= ratio_y
         return (flow4, corr_raw) if return_corr else flow4
 
-    def forward(self, im_target, im_source, im_target_256, im_source_256):
+    def forward(self, im_target, im_source, im_target_256, im_source_256,
+                return_dcn_trace=False):
         # all indices 1 refer to target images
         # all indices 2 refer to source images
 
@@ -419,6 +435,22 @@ class GLUNet_model(nn.Module):
         if self.refinement_at_adaptive_reso or self.refinement_at_all_levels:
             x = self.dc_conv4(self.dc_conv3(self.dc_conv2(self.dc_conv1(x3))))
             flow3 = flow3 + self.dc_conv7(self.dc_conv6(self.dc_conv5(x)))
+
+        dcn_trace = []
+        if self.local_dcn32 is not None:
+            for _ in range(self.local_dcn_steps):
+                # flow3 is measured in 256-image pixels. warp() and DCN
+                # offsets are measured in the 32-grid feature pixels.
+                grid_flow = torch.cat((flow3[:, 0:1] * (c23.shape[-1] / float(w_256)) * div,
+                                       flow3[:, 1:2] * (c23.shape[-2] / float(h_256)) * div), 1)
+                warped = warp(c23, grid_flow)
+                local_corr = self.leakyRELU(
+                    correlation.FunctionCorrelation(tensorFirst=c13,
+                                                    tensorSecond=warped))
+                flow3, info = self.local_dcn32(local_corr, c13, warped, flow3,
+                                                w_256, h_256)
+                if return_dcn_trace:
+                    dcn_trace.append({"flow_256px": flow3, **info})
 
         if self.iterative_refinement and self.evaluation:
             # from 32x32 resolution, if upsampling to 1/8*original resolution is too big,
@@ -511,4 +543,6 @@ class GLUNet_model(nn.Module):
         if self.evaluation:
             return flow1
         else:
+            if return_dcn_trace:
+                return [flow4, flow3], [flow2, flow1], dcn_trace
             return [flow4, flow3], [flow2, flow1]
