@@ -29,6 +29,9 @@ from roadscene_refinement_audit import (STAGES, combine_groups,
 
 SEED = 2026
 COARSE_LOSS_WEIGHT = 0.25
+RECIPE_VERSION = 2
+WARMUP_EPOCHS = 10
+PRESERVED_LAYER_LR = 1e-5
 ARMS = {"saca_dcn": "attention", "dns_saca_dcn": "dns_attention"}
 GROUPS = ("all", "gt_displacement_64+",
           "outside_first_window_assigned_pixels",
@@ -74,6 +77,7 @@ def model_from_weights(args, arm, device, selected=None, allow_smoke=False):
         if (payload.get("arm") != arm or
                 payload.get("base_sha256") != sha256_file(args.pretrained) or
                 payload.get("source_sha256") != sha256_file(source_path(args, arm)) or
+                payload.get("budget") != budget(args) or
                 (payload.get("code_check_only") and not allow_smoke)):
             raise ValueError(f"{arm}: DCN checkpoint or source mismatch")
         for name in LOCAL_NAMES:
@@ -134,6 +138,9 @@ def initialization_check(args, valset, device):
 def budget(args):
     return {"epochs": args.epochs, "batch_size": args.batch_size,
             "lr": args.lr, "seed": SEED, "dcn_steps": 1,
+            "recipe_version": RECIPE_VERSION,
+            "dcn_only_warmup_epochs": 1 if args.code_check else WARMUP_EPOCHS,
+            "preserved_layer_lr": PRESERVED_LAYER_LR,
             "loss": "masked sqrt(dx^2+dy^2+0.01) at 512px",
             "coarse_loss_weight": COARSE_LOSS_WEIGHT,
             "train_pairs": 2 if args.code_check else 176,
@@ -189,8 +196,16 @@ def joint_loss(model, batch, device):
 def train_arm(args, arm, trainset, val_loader, device):
     torch.manual_seed(SEED)
     model = model_from_weights(args, arm, device)
-    params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.AdamW(params, lr=args.lr)
+    coarse_params = list(model.decoder4.parameters()) + list(model.coarse_attention.parameters())
+    if arm == "dns_saca_dcn":
+        coarse_params += list(model.coarse_dns.parameters())
+    local_params = [p for name in LOCAL_NAMES for p in getattr(model, name).parameters()]
+    dcn_params = list(model.local_dcn32.parameters())
+    params = coarse_params + local_params + dcn_params
+    optimizer = torch.optim.AdamW([
+        {"params": coarse_params, "lr": PRESERVED_LAYER_LR},
+        {"params": local_params, "lr": PRESERVED_LAYER_LR},
+        {"params": dcn_params, "lr": args.lr}], lr=args.lr)
     latest = args.output / f"latest_{arm}.pth"
     best_path = args.output / f"best_{arm}.pth"
     if args.resume and best_path.exists() and not latest.exists():
@@ -222,6 +237,17 @@ def train_arm(args, arm, trainset, val_loader, device):
             torch.cuda.set_rng_state(payload["cuda_rng_state"])
         if first_epoch <= args.epochs and not best_path.exists():
             raise ValueError(f"{arm}: resume state lacks selected best checkpoint")
+    else:
+        # The selected model must never be worse than its zero-update source.
+        best = select_metric(model, val_loader, device)
+        history.append({"epoch": 0, "phase": "source_checkpoint",
+                        "train_loss": None, "train_fine_loss_512px": None,
+                        "train_coarse_loss_512px": None,
+                        "val_final_epe_512px": best, "optimizer_steps": 0,
+                        "image_order_sha256": None})
+        atomic_save(selected_payload(model, arm, 0, best, 0, args), best_path)
+        print(f"{arm} epoch 0/{args.epochs}: source final val EPE={best:.4f}",
+              flush=True)
     started = time.perf_counter()
     generator = torch.Generator()
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True,
@@ -230,6 +256,9 @@ def train_arm(args, arm, trainset, val_loader, device):
                               persistent_workers=args.workers > 0)
     for epoch in range(first_epoch, args.epochs + 1):
         model.eval()
+        warmup = epoch <= (1 if args.code_check else WARMUP_EPOCHS)
+        for parameter in coarse_params + local_params:
+            parameter.requires_grad_(not warmup)
         generator.manual_seed(SEED + epoch)
         order_digest = hashlib.sha256()
         total, fine_total, coarse_total, count = 0., 0., 0., 0
@@ -246,6 +275,7 @@ def train_arm(args, arm, trainset, val_loader, device):
                 grad = model.local_dcn32.delta.weight.grad
                 if grad is None or not torch.isfinite(grad).all() or not grad.abs().sum():
                     raise RuntimeError(f"{arm}: final-flow loss does not train DCN residual")
+            if args.code_check and not warmup and count == 0:
                 coarse_grad = model.decoder4.final.weight.grad
                 attention_grads = [p.grad for p in model.coarse_attention.parameters()]
                 if (coarse_grad is None or not torch.isfinite(coarse_grad).all() or
@@ -275,6 +305,7 @@ def train_arm(args, arm, trainset, val_loader, device):
         seconds = time.perf_counter() - epoch_started
         metric = select_metric(model, val_loader, device)
         record = {"epoch": epoch, "train_loss": total / count,
+                  "phase": "dcn_only_warmup" if warmup else "joint_low_lr",
                   "train_fine_loss_512px": fine_total / count,
                   "train_coarse_loss_512px": coarse_total / count,
                   "val_final_epe_512px": metric, "optimizer_steps": steps,
@@ -457,7 +488,7 @@ def main():
     if args.batch_preflight and (args.resume or args.eval_only):
         parser.error("Batch preflight cannot resume or evaluate")
     if args.code_check:
-        args.epochs, args.batch_size = 1, 1
+        args.epochs, args.batch_size = 2, 1
     elif (args.epochs, args.batch_size, args.lr) != (200, 4, 1e-4):
         parser.error("Formal comparison is fixed at 200 epochs, batch 4, lr 1e-4")
     if not args.resume and not args.eval_only and any(args.output.glob("best_*.pth")):
@@ -506,7 +537,7 @@ def main():
               "budget": budget(args), "source_checkpoints": source_meta,
               "provenance": hashes, "protocol": PROTOCOL,
               "geometry_check": geometry, "initialization_check": identity,
-              "trainable": "joint decoder4 + SA/CA (+ DNS in combination arm) + decoder3 + existing 32-grid dilated refiners + one 32-grid DCN; VGG, later local stages and pretrained flow upsamplers frozen in both arms",
+              "trainable": "epochs 1-10: only 32-grid DCN at 1e-4; epochs 11-200: joint decoder4 + SA/CA (+ DNS) + existing 32-grid decoder/dilated refiners at 1e-5, DCN at 1e-4; VGG, later local stages and pretrained flow upsamplers frozen",
               "training_loss": "L=mean_valid sqrt(final512-GT squared norm+0.01) + 0.25*mean_valid sqrt(upsampled_coarse256*2-GT squared norm+0.01); both terms on same 512px GT/mask",
               "checkpoint_rule": "lowest valid-pixel-weighted final 512px validation EPE within each arm",
               "training": {}, "results": {}}
