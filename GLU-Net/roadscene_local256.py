@@ -219,6 +219,7 @@ def train(model, trainset, valset, device, output, coarse_sha, fine_sha,
     history = [{"epoch": 0, "val_final_epe_512px": best,
                 "train_loss": None, "optimizer_steps": 0}]
     best_epoch, bad, steps = 0, 0, 0
+    patience_reference = best
     save_atomic(checkpoint(model, optimizer, scheduler, 0, best, steps,
                            coarse_sha, fine_sha, history),
                 output / "best_local256.pth")
@@ -248,15 +249,20 @@ def train(model, trainset, valset, device, output, coarse_sha, fine_sha,
             steps += 1
         value = validation_epe(model, valset, device)
         scheduler.step(value)
-        improved = value < best - MIN_DELTA
+        # Keep the actual lowest validation EPE. MIN_DELTA controls only
+        # whether progress resets early stopping, never checkpoint selection.
+        improved = value < best
         if improved:
-            best, best_epoch, bad = value, epoch, 0
+            best, best_epoch = value, epoch
+        if value < patience_reference - MIN_DELTA:
+            patience_reference, bad = value, 0
         else:
             bad += 1
         history.append({"epoch": epoch, "train_loss": float(np.mean(losses)),
                         "val_final_epe_512px": value, "best_epe_512px": best,
                         "optimizer_steps": steps, "lr": optimizer.param_groups[0]["lr"],
-                        "patience": f"{bad}/{PATIENCE}"})
+                        "patience": f"{bad}/{PATIENCE}",
+                        "patience_reference_epe_512px": patience_reference})
         (output / "history.json").write_text(json.dumps(history, indent=2),
                                                encoding="utf-8")
         if improved:
@@ -276,6 +282,8 @@ def train(model, trainset, valset, device, output, coarse_sha, fine_sha,
     model.eval()
     return {"selected_epoch": best_epoch, "stopped_at_epoch": epoch,
             "max_epochs": limit, "early_stop_patience": PATIENCE,
+            "checkpoint_selection": "strict minimum validation final EPE; no min_delta",
+            "patience_min_delta_512px": MIN_DELTA,
             "stop_reason": "validation_patience" if bad >= PATIENCE
                            else "maximum_epochs",
             "budget_limited": not code_check and epoch == limit and bad < PATIENCE,
