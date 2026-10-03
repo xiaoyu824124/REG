@@ -56,6 +56,9 @@ class GLUNet_model(nn.Module):
         if local_dcn_steps and div != 1.0:
             raise ValueError('Local DCN uses image-pixel flow and requires div=1')
         self.local_dcn_steps = local_dcn_steps
+        # Opt in only when a training recipe explicitly fine-tunes the coarse
+        # VGG block. The default preserves the pretrained model's forward path.
+        self.train_coarse_encoder = False
         self.local_dcn32 = (LocalDeformableFlowUpdate()
                             if local_dcn_steps else None)
 
@@ -397,7 +400,10 @@ class GLUNet_model(nn.Module):
             c12 = im1_pyr[-1] # size original_res/8xoriginal_res/8
             c22 = im2_pyr[-1]
 
-            # pyramid, 256 reso
+        # The original full forward detached every VGG feature. Joint training
+        # must retain the graph for level_4 while leaving its earlier blocks
+        # frozen through requires_grad=False in the staged training recipe.
+        with torch.set_grad_enabled(self.train_coarse_encoder and torch.is_grad_enabled()):
             im1_pyr_256 = self.pyramid(im_target_256)
             im2_pyr_256 = self.pyramid(im_source_256)
             c13 = im1_pyr_256[-4]
