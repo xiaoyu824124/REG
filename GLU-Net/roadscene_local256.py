@@ -30,8 +30,8 @@ import roadscene_staged as staged
 
 
 SEED = staged.SEED
-MAX_EPOCHS = 20
-PATIENCE = 5
+MAX_EPOCHS = 80
+PATIENCE = 12
 MIN_DELTA = .01
 # Fixed before training. All EPE margins are in 512-image-pixel units.
 DECISION = {"minimum_final_epe_gain_512px": .5,
@@ -212,7 +212,7 @@ def train(model, trainset, valset, device, output, coarse_sha, fine_sha,
           code_check):
     optimizer = torch.optim.AdamW(model.refiner.parameters(), lr=1e-4)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=.5, patience=2,
+        optimizer, mode="min", factor=.5, patience=4,
         threshold=MIN_DELTA, threshold_mode="abs", min_lr=1e-7)
     fixed = snapshot_base(model)
     best = validation_epe(model, valset, device)
@@ -275,6 +275,10 @@ def train(model, trainset, valset, device, output, coarse_sha, fine_sha,
     model.load_state_dict(selected["model_state_dict"], strict=True)
     model.eval()
     return {"selected_epoch": best_epoch, "stopped_at_epoch": epoch,
+            "max_epochs": limit, "early_stop_patience": PATIENCE,
+            "stop_reason": "validation_patience" if bad >= PATIENCE
+                           else "maximum_epochs",
+            "budget_limited": not code_check and epoch == limit and bad < PATIENCE,
             "optimizer_steps_executed": steps, "best_val_final_epe_512px": best,
             "frozen_base_max_abs_change": frozen_difference,
             "history": history}
