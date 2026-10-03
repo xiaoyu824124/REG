@@ -1,0 +1,263 @@
+{
+  "split": "val",
+  "test_pairs_accessed": false,
+  "code_check_only": true,
+  "smoke_legacy_coarse": false,
+  "pretrained_sha256": "2eac424ee4c9998cafed7ca60e7181d9f54adcee7e8e71250c5f2c7c0c9e50b1",
+  "coarse_checkpoint_sha256": "5af7e4cea2a2827a428654df034f6ff65422acf1fccbdc9d762db5bd8d2dcfca",
+  "prior_fine_checkpoint_sha256": "9d976b97da32935e62dc7e9a829a74687aa27d2c01e8808afb6ce9be35991dab",
+  "matching_fix": "nonnegative_correlation_before_mutual_matching",
+  "code_sha256": "ed0ee0ce3d1bd0fd6e17c9d2dec530b01bfa86912b83426f035175e080364cb4",
+  "selection": "min val final EPE 512px, min_delta=0.01",
+  "max_epochs": 1,
+  "optimizer_steps_per_trained_arm": 1,
+  "prior_schedule": "DCN-only epochs 1-5, local+DCN epoch 6; separate reference",
+  "matched_schedule": "active module group from epoch 1 through epoch 6",
+  "loss": "same final-flow Charbonnier EPE and valid mask as staged fine",
+  "protocol": {
+    "version": 1,
+    "direction": "visible(target) -> warped IR(source)",
+    "resolution": [
+      512,
+      512
+    ],
+    "flow_unit": "512x512 image pixels",
+    "mask": "finite GT and GT-mapped source coordinate inside image; no prediction-dependent exclusions",
+    "aepe": "mean valid-pixel EPE per pair; all pairs included in arithmetic pair mean",
+    "cmr": "100 * count(pair AEPE < threshold) / count(all pairs)",
+    "cmr_thresholds_512px": [
+      5,
+      4,
+      3,
+      2,
+      1,
+      0.9,
+      0.8,
+      0.7,
+      0.6,
+      0.5,
+      0.4,
+      0.3,
+      0.2,
+      0.1
+    ],
+    "legacy_epe": "sum valid EPE / sum valid pixels (unchanged project convention)",
+    "batch_size": 1,
+    "warmup_forwards": 3,
+    "timed_repeats_per_pair": 5,
+    "timing": "median of 5 synchronized forwards including on-device model preprocessing and output interpolation; excludes disk IO, host transfer, GT and metrics",
+    "precision": "float32, no autocast",
+    "crft_native_input_size": 64,
+    "preprocessing": "same native512 uint8 RGB pairs; GLU ImageNet/256 byte area resize; CRFT official64 uint8 bilinear resize + internal per-channel mean/std; CRFT flow resized/scaled to512"
+  },
+  "geometry_and_bypass": {
+    "max_abs_difference_activating_untrained_dcn": {
+      "coarse16": 0.0,
+      "local32": 0.0,
+      "local64": 0.0,
+      "final128": 0.0
+    },
+    "bypass": "local_dcn_steps=0 skips only the 32-grid DCN block",
+    "flow_units": {
+      "coarse16": "256px image pixels",
+      "local32": "256px image pixels",
+      "local64": "512px image pixels",
+      "final128": "512px image pixels"
+    },
+    "direction": "VI target -> IR source"
+  },
+  "training": {
+    "dcn_only": {
+      "selected_epoch": 0,
+      "selected_final_epe_512px": 5.786540161330137,
+      "max_steps": 1,
+      "frozen_max_abs_change": 0.0,
+      "history": [
+        {
+          "epoch": 0,
+          "steps": 0,
+          "val_final_epe_512px": 5.786540161330137,
+          "train_loss": null,
+          "image_order_sha256": null
+        },
+        {
+          "epoch": 1,
+          "steps": 1,
+          "val_final_epe_512px": 6.747152236405189,
+          "train_loss": 3.149958848953247,
+          "image_order_sha256": "d0c68961569021f6e7a6463a5419a37eff62a17cf7d971baebcd4917f1f3de5d",
+          "same_order_as_prior_fine": false,
+          "learning_rates": {
+            "local": 1e-05,
+            "dcn": 0.0001
+          },
+          "train_seconds": 0.5871413999702781,
+          "peak_train_allocated_mib": 1634.10546875
+        }
+      ]
+    },
+    "local_only": {
+      "selected_epoch": 0,
+      "selected_final_epe_512px": 5.786540161330137,
+      "max_steps": 1,
+      "frozen_max_abs_change": 0.0,
+      "history": [
+        {
+          "epoch": 0,
+          "steps": 0,
+          "val_final_epe_512px": 5.786540161330137,
+          "train_loss": null,
+          "image_order_sha256": null
+        },
+        {
+          "epoch": 1,
+          "steps": 1,
+          "val_final_epe_512px": 5.921324682874002,
+          "train_loss": 3.149958848953247,
+          "image_order_sha256": "d0c68961569021f6e7a6463a5419a37eff62a17cf7d971baebcd4917f1f3de5d",
+          "same_order_as_prior_fine": false,
+          "learning_rates": {
+            "local": 1e-05,
+            "dcn": 0.0001
+          },
+          "train_seconds": 0.4263634999515489,
+          "peak_train_allocated_mib": 1728.208984375
+        }
+      ]
+    },
+    "local_dcn": {
+      "selected_epoch": 0,
+      "selected_final_epe_512px": 5.786540161330137,
+      "max_steps": 1,
+      "frozen_max_abs_change": 0.0,
+      "history": [
+        {
+          "epoch": 0,
+          "steps": 0,
+          "val_final_epe_512px": 5.786540161330137,
+          "train_loss": null,
+          "image_order_sha256": null
+        },
+        {
+          "epoch": 1,
+          "steps": 1,
+          "val_final_epe_512px": 6.761572212356965,
+          "train_loss": 3.149958848953247,
+          "image_order_sha256": "d0c68961569021f6e7a6463a5419a37eff62a17cf7d971baebcd4917f1f3de5d",
+          "same_order_as_prior_fine": false,
+          "learning_rates": {
+            "local": 1e-05,
+            "dcn": 0.0001
+          },
+          "train_seconds": 0.45538109994959086,
+          "peak_train_allocated_mib": 1815.20166015625
+        }
+      ]
+    }
+  },
+  "arms": {
+    "coarse_frozen": {
+      "samples": 1,
+      "final_epe_512px": 5.786540145873221,
+      "pair_mean_aepe_512px": 5.786540145873221,
+      "valid_pixels_full": 251162,
+      "four_level_epe_512px": {
+        "coarse16": 7.923621009547623,
+        "local32": 8.226129948001688,
+        "local64": 6.83770634092737,
+        "final128": 5.786540161330137
+      },
+      "large_motion_final_epe_512px": null,
+      "first_window_outside_final_epe_512px": null,
+      "first_window_outside_query_fraction": 0.0,
+      "inference_ms_mean_pair_median": 75.190500007011,
+      "peak_inference_allocated_mib": 1030.1123046875
+    },
+    "dcn_only": {
+      "samples": 1,
+      "final_epe_512px": 5.786540145873221,
+      "pair_mean_aepe_512px": 5.786540145873221,
+      "valid_pixels_full": 251162,
+      "four_level_epe_512px": {
+        "coarse16": 7.923621009547623,
+        "local32": 8.226129948001688,
+        "local64": 6.83770634092737,
+        "final128": 5.786540161330137
+      },
+      "large_motion_final_epe_512px": null,
+      "first_window_outside_final_epe_512px": null,
+      "first_window_outside_query_fraction": 0.0,
+      "inference_ms_mean_pair_median": 76.7274999525398,
+      "peak_inference_allocated_mib": 1031.515625
+    },
+    "local_only": {
+      "samples": 1,
+      "final_epe_512px": 5.786540145873221,
+      "pair_mean_aepe_512px": 5.786540145873221,
+      "valid_pixels_full": 251162,
+      "four_level_epe_512px": {
+        "coarse16": 7.923621009547623,
+        "local32": 8.226129948001688,
+        "local64": 6.83770634092737,
+        "final128": 5.786540161330137
+      },
+      "large_motion_final_epe_512px": null,
+      "first_window_outside_final_epe_512px": null,
+      "first_window_outside_query_fraction": 0.0,
+      "inference_ms_mean_pair_median": 79.32260003872216,
+      "peak_inference_allocated_mib": 1030.1123046875
+    },
+    "local_dcn": {
+      "samples": 1,
+      "final_epe_512px": 5.786540145873221,
+      "pair_mean_aepe_512px": 5.786540145873221,
+      "valid_pixels_full": 251162,
+      "four_level_epe_512px": {
+        "coarse16": 7.923621009547623,
+        "local32": 8.226129948001688,
+        "local64": 6.83770634092737,
+        "final128": 5.786540161330137
+      },
+      "large_motion_final_epe_512px": null,
+      "first_window_outside_final_epe_512px": null,
+      "first_window_outside_query_fraction": 0.0,
+      "inference_ms_mean_pair_median": 78.56639998499304,
+      "peak_inference_allocated_mib": 1031.515625
+    },
+    "prior_5plus1_local_dcn": {
+      "samples": 1,
+      "final_epe_512px": 6.2213338515742365,
+      "pair_mean_aepe_512px": 6.221333851574236,
+      "valid_pixels_full": 251162,
+      "four_level_epe_512px": {
+        "coarse16": 7.923621009547623,
+        "local32": 7.542043083746745,
+        "local64": 6.55309421807439,
+        "final128": 6.221334238459639
+      },
+      "large_motion_final_epe_512px": null,
+      "first_window_outside_final_epe_512px": null,
+      "first_window_outside_query_fraction": 0.0,
+      "inference_ms_mean_pair_median": 77.48489989899099,
+      "peak_inference_allocated_mib": 1031.515625
+    }
+  },
+  "paired_vs_prior": {
+    "coarse_frozen": {
+      "improved_pairs_vs_prior": 1,
+      "worsened_pairs_vs_prior": 0
+    },
+    "dcn_only": {
+      "improved_pairs_vs_prior": 1,
+      "worsened_pairs_vs_prior": 0
+    },
+    "local_only": {
+      "improved_pairs_vs_prior": 1,
+      "worsened_pairs_vs_prior": 0
+    },
+    "local_dcn": {
+      "improved_pairs_vs_prior": 1,
+      "worsened_pairs_vs_prior": 0
+    }
+  }
+}
