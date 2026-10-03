@@ -1,0 +1,9 @@
+{
+  "matching_fix": "nonnegative_correlation_before_mutual_matching",
+  "pretrained_sha256": "2eac424ee4c9998cafed7ca60e7181d9f54adcee7e8e71250c5f2c7c0c9e50b1",
+  "script_sha256": "85445f0c1111d8bce055343363bf2c2c05d5e2daf46e9841d1e6602e5a4f9ba7",
+  "train_split": "train",
+  "selection_split": "val",
+  "test_pairs_accessed": false,
+  "source": "original pretrained GLU-Net, not epoch-37 continuation"
+}
