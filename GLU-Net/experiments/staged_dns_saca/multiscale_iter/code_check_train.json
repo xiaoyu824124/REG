@@ -1,0 +1,58 @@
+{
+  "code_check_only": true,
+  "train_pairs": [
+    "000000",
+    "000001"
+  ],
+  "loss": 3.5177717208862305,
+  "terms": {
+    "final_loss": 3.1792104244232178,
+    "64_round1_loss": 3.594053268432617,
+    "64_round2_loss": 3.594053268432617,
+    "128_round1_loss": 3.1771740913391113,
+    "128_round2_loss": 3.1771740913391113
+  },
+  "head_grad_abs_sum": 20.685840606689453,
+  "frozen_base_max_abs_change": 0.0,
+  "branch_head_max_abs_after_step": 0.00010000000474974513,
+  "zero_init_checks": {
+    "tensor_shapes": {
+      "coarse16": [
+        1,
+        2,
+        16,
+        16
+      ],
+      "local32": [
+        1,
+        2,
+        32,
+        32
+      ],
+      "local64": [
+        1,
+        2,
+        64,
+        64
+      ],
+      "final128": [
+        1,
+        2,
+        128,
+        128
+      ]
+    },
+    "zero_head_final_max_abs_difference": 0.0,
+    "zero_head_64_max_abs_difference": 0.0,
+    "zero_head_128_max_abs_difference": 0.0,
+    "geometry": {
+      "flow_direction": "visible target -> infrared source",
+      "grid64_one_cell_in_512px": 8,
+      "grid128_one_cell_in_512px": 4,
+      "align_corners": true,
+      "impulse_direction_check": "passed"
+    },
+    "frozen_base_parameters": true
+  },
+  "test_pairs_accessed": false
+}
