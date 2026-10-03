@@ -166,6 +166,8 @@ def train_arm(arm, coarse, coarse_sha, pretrained_sha, trainset, valset,
               reference_orders, output, device, code_check):
     model = new_model(coarse, device, bypass=arm == "local_only")
     selected, active = configure(model, arm)
+    configured_trainable = sum(
+        p.numel() for name in active for p in selected[name])
     snapshot = frozen_snapshot(model, active)
     optimizer, scheduler = staged.make_optimizer(model, "fine")
     best = validation_epe(model, valset, device)
@@ -282,6 +284,8 @@ def train_arm(arm, coarse, coarse_sha, pretrained_sha, trainset, valset,
     return model.eval(), {"selected_epoch": best_epoch,
                           "selected_final_epe_512px": best,
                           "max_steps": steps, "frozen_max_abs_change": change,
+                          "configured_trainable_parameters":
+                              configured_trainable,
                           "history": history}
 
 
@@ -330,6 +334,14 @@ def evaluate_arm(model, valset, device):
                "inference_ms_mean_pair_median":
                    common["inference_ms_mean_pair_median"],
                "peak_inference_allocated_mib": common["peak_allocated_mib"]}
+    base = model.base if hasattr(model, "base") else model
+    dcn_parameters = sum(p.numel() for p in base.local_dcn32.parameters())
+    summary["total_parameters"] = sum(p.numel() for p in model.parameters())
+    summary["effective_inference_parameters"] = (
+        summary["total_parameters"] - dcn_parameters
+        if base.local_dcn_steps == 0 else summary["total_parameters"])
+    summary["trainable_parameters"] = sum(
+        p.numel() for p in model.parameters() if p.requires_grad)
     return summary, by_image
 
 

@@ -29,13 +29,13 @@ def warp_source_to_target(source_feature, target_to_source_flow_512px):
 
 
 class MultiScaleLocalIter(nn.Module):
-    """Two shared update rounds at each of 64 and 128 feature grids."""
+    """One or two shared update rounds at each of 64 and 128 grids."""
 
     def __init__(self, channels64=256, channels128=128, width=32,
                  hidden=64, rounds=2, max_delta_grid=1.0):
         super().__init__()
-        if rounds != 2:
-            raise ValueError("The controlled experiment uses exactly two rounds")
+        if rounds not in (1, 2):
+            raise ValueError("Controlled experiments use one or two rounds")
         self.rounds = rounds
         self.max_delta_grid = float(max_delta_grid)
         self.project64 = nn.Conv2d(channels64, width, 1)
