@@ -383,7 +383,7 @@ class GLUNet_model(nn.Module):
         return (flow4, corr_raw) if return_corr else flow4
 
     def forward(self, im_target, im_source, im_target_256, im_source_256,
-                return_dcn_trace=False):
+                return_dcn_trace=False, local_fusion=None):
         # all indices 1 refer to target images
         # all indices 2 refer to source images
 
@@ -395,6 +395,11 @@ class GLUNet_model(nn.Module):
         with torch.no_grad():
             im1_pyr = self.pyramid(im_target, eigth_resolution=True)
             im2_pyr = self.pyramid(im_source, eigth_resolution=True)
+            # The optional local fusion uses the frozen 256-grid VGG features.
+            # Keep the legacy path byte-for-byte unchanged when it is absent.
+            if local_fusion is not None:
+                half_target = self.pyramid._modules['level_1'](im1_pyr[0])
+                half_source = self.pyramid._modules['level_1'](im2_pyr[0])
             c11 = im1_pyr[-2] # size original_res/4xoriginal_res/4
             c21 = im2_pyr[-2]
             c12 = im1_pyr[-1] # size original_res/8xoriginal_res/8
@@ -541,6 +546,9 @@ class GLUNet_model(nn.Module):
             corr1 = corr1
         if self.decoder_inputs == 'corr_flow':
             corr1 = torch.cat((corr1, up_flow2), 1)
+        if local_fusion is not None:
+            corr1 = corr1 + local_fusion(c11, c21, half_target, half_source,
+                                         up_flow2, corr1.shape[1])
         x, res_flow1 = self.decoder1(corr1)
         flow1 = res_flow1 + up_flow2
         x = self.l_dc_conv4(self.l_dc_conv3(self.l_dc_conv2(self.l_dc_conv1(x))))
