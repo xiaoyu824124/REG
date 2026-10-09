@@ -29,7 +29,8 @@ class GLUNet_model(nn.Module):
                  batch_norm=True, pyramid_type='VGG', md=4, upfeat_channels=2, dense_connection=True,
                  consensus_network=False, cyclic_consistency=True, decoder_inputs='corr_flow_feat',
                  coarse_attention=False, backbone_pretrained=True, coarse_dns=False,
-                 coarse_mind=None, coarse_phase=False, local_dcn_steps=0):
+                 coarse_mind=None, coarse_phase=False, local_dcn_steps=0,
+                 local_dcn64=False):
         """
         input: md --- maximum displacement (for correlation. default: 4), after warpping
 
@@ -53,14 +54,18 @@ class GLUNet_model(nn.Module):
         self.coarse_phase = None
         if local_dcn_steps not in (0, 1, 2, 3):
             raise ValueError('local_dcn_steps must be 0, 1, 2, or 3')
-        if local_dcn_steps and div != 1.0:
+        if (local_dcn_steps or local_dcn64) and div != 1.0:
             raise ValueError('Local DCN uses image-pixel flow and requires div=1')
+        if local_dcn64 and not local_dcn_steps:
+            raise ValueError('Enable the 32-grid DCN before the 64-grid DCN')
         self.local_dcn_steps = local_dcn_steps
         # Opt in only when a training recipe explicitly fine-tunes the coarse
         # VGG block. The default preserves the pretrained model's forward path.
         self.train_coarse_encoder = False
         self.local_dcn32 = (LocalDeformableFlowUpdate()
                             if local_dcn_steps else None)
+        self.local_dcn64 = (LocalDeformableFlowUpdate()
+                            if local_dcn64 else None)
 
         # where to put the refinement networks
         self.refinement_at_all_levels = refinement_at_all_levels
@@ -184,10 +189,11 @@ class GLUNet_model(nn.Module):
 
         # The legacy model-wide Conv2d initializer above also visits new DCN
         # predictor heads. Restore exact identity and zero offsets afterwards.
-        if self.local_dcn32 is not None:
-            for layer in (self.local_dcn32.offset, self.local_dcn32.delta):
-                nn.init.zeros_(layer.weight)
-                nn.init.zeros_(layer.bias)
+        for module in (self.local_dcn32, self.local_dcn64):
+            if module is not None:
+                for layer in (module.offset, module.delta):
+                    nn.init.zeros_(layer.weight)
+                    nn.init.zeros_(layer.bias)
 
         if pyramid_type == 'ResNet':
             self.pyramid = ResNetPyramid(pretrained=backbone_pretrained)
@@ -458,10 +464,12 @@ class GLUNet_model(nn.Module):
                 local_corr = self.leakyRELU(
                     correlation.FunctionCorrelation(tensorFirst=c13,
                                                     tensorSecond=warped))
+                before_dcn32 = flow3
                 flow3, info = self.local_dcn32(local_corr, c13, warped, flow3,
                                                 w_256, h_256)
                 if return_dcn_trace:
-                    dcn_trace.append({"flow_256px": flow3, **info})
+                    dcn_trace.append({"grid": 32, "flow_before_256px": before_dcn32,
+                                      "flow_256px": flow3, **info})
 
         if self.iterative_refinement and self.evaluation:
             # from 32x32 resolution, if upsampling to 1/8*original resolution is too big,
@@ -530,6 +538,20 @@ class GLUNet_model(nn.Module):
         if self.refinement_at_all_levels:
             x = self.dc_conv4_level2(self.dc_conv3_level2(self.dc_conv2_level2(self.dc_conv1_level2(x2))))
             flow2 = flow2 + self.dc_conv7_level2(self.dc_conv6_level2(self.dc_conv5_level2(x)))
+        if self.local_dcn64 is not None:
+            # flow2 is in full-image pixels; warp and offsets use the 64-grid.
+            grid_flow = torch.cat((flow2[:, 0:1] * (c22.shape[-1] / float(w_full)) * div,
+                                   flow2[:, 1:2] * (c22.shape[-2] / float(h_full)) * div), 1)
+            warped = warp(c22, grid_flow)
+            local_corr = self.leakyRELU(
+                correlation.FunctionCorrelation(tensorFirst=c12,
+                                                tensorSecond=warped))
+            before_dcn64 = flow2
+            flow2, info = self.local_dcn64(local_corr, c12, warped, flow2,
+                                            w_full, h_full)
+            if return_dcn_trace:
+                dcn_trace.append({"grid": 64, "flow_before_512px": before_dcn64,
+                                  "flow_512px": flow2, **info})
 
         up_flow2 = self.deconv2(flow2)
         if self.decoder_inputs == 'corr_flow_feat':

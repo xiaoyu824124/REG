@@ -55,9 +55,12 @@ class FineArm(nn.Module):
         source, target, source256, target256, *_ = self.base.pre_process_data(
             batch['source_image'].to(device), batch['target_image'].to(device),
             device=device)
-        flow256, flow512 = self.base(target, source, target256, source256,
-                                      local_fusion=self.fusion)
-        return {'coarse16': F.interpolate(flow256[0], (512, 512),
+        capture_dcn = getattr(self, 'dcn_supervision', False)
+        forward = self.base(target, source, target256, source256,
+                            local_fusion=self.fusion,
+                            return_dcn_trace=capture_dcn)
+        flow256, flow512 = forward[:2]
+        result = {'coarse16': F.interpolate(flow256[0], (512, 512),
                                           mode='bilinear', align_corners=False) * 2,
                 'local32': F.interpolate(flow256[1], (512, 512),
                                          mode='bilinear', align_corners=False) * 2,
@@ -67,6 +70,9 @@ class FineArm(nn.Module):
                                          mode='bilinear', align_corners=False),
                 'final512': F.interpolate(flow512[1], (512, 512),
                                           mode='bilinear', align_corners=False)}
+        if capture_dcn:
+            result['dcn_trace'] = forward[2]
+        return result
 
 
 def make_arm(args, arm, device):
