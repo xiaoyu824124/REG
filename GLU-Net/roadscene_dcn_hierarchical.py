@@ -241,6 +241,7 @@ def initialization_check(args, trainset, valset, device):
     # once the residual output head has moved away from zero.
     training_batch = next(iter(DataLoader(trainset, batch_size=1)))
     gradients = {}
+    old_gradient_difference = 0.
     for arm, model in models.items():
         model.train()
         model.zero_grad(set_to_none=True)
@@ -249,8 +250,24 @@ def initialization_check(args, trainset, valset, device):
         if arm == 'D2':
             final, auxiliary, _, _ = dcn_specific_loss(output, training_batch, device)
             final.backward(retain_graph=True)
+            old_local_parameters = [
+                parameter
+                for name in LOCAL_NAMES
+                for parameter in getattr(model.base, name).parameters()
+            ]
+            old_local_grads = [parameter.grad.detach().clone()
+                               if parameter.grad is not None else None
+                               for parameter in old_local_parameters]
             torch.autograd.backward(auxiliary, inputs=list(model.base.local_dcn32.parameters()) +
                                     list(model.base.local_dcn64.parameters()))
+            for parameter, before in zip(old_local_parameters, old_local_grads):
+                after = parameter.grad
+                if (before is None) != (after is None):
+                    raise RuntimeError('DCN auxiliary changed which old local gradients exist')
+                if before is not None:
+                    old_gradient_difference = max(
+                        old_gradient_difference,
+                        float((after - before).abs().max()))
         else:
             loss, _, _ = objective(output, training_batch, device,
                                    model.hierarchical)
@@ -264,20 +281,12 @@ def initialization_check(args, trainset, valset, device):
         if fixed_digest(model) != frozen[arm]:
             raise RuntimeError('Backward pass changed frozen coarse weights or BN')
         model.dcn_supervision = False
-    old_gradient_difference = 0.
-    for name in LOCAL_NAMES:
-        original_module = getattr(models['D0'].base, name)
-        supervised_module = getattr(models['D2'].base, name)
-        for old, custom in zip(original_module.parameters(), supervised_module.parameters()):
-            if old.grad is not None and custom.grad is not None:
-                old_gradient_difference = max(old_gradient_difference,
-                    float((old.grad - custom.grad).abs().max()))
-    if old_gradient_difference > 1e-4:
+    if old_gradient_difference != 0:
         raise RuntimeError('DCN-specific auxiliary loss leaked into old local parameters: '
                            f'{old_gradient_difference}')
     return {'maximum_initial_flow_difference': differences,
             'residual_gradient_norm': gradients,
-            'old_local_gradient_difference_D2_vs_D0': old_gradient_difference,
+            'old_local_gradient_difference_after_D2_aux': old_gradient_difference,
             'grid_to_image_pixels': {'32/256': 8, '64/512': 8},
             'direction': 'VI target to IR source', 'test_pairs_accessed': False}
 
