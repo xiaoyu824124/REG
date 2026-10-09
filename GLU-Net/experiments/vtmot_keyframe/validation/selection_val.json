@@ -1,0 +1,127 @@
+{
+  "rule": "EPE <= per-frame A1 + 0.5px; compute <= 80% of A1; keyframe fraction <= 50%; minimize EPE among eligible",
+  "selected": "baseline",
+  "eligible": [],
+  "selected_beats_zero_flow": false,
+  "adaptive_vs_fixed": {
+    "reference": "fixed",
+    "frames": 800,
+    "improved_frames": 310,
+    "mean_epe_gain_512px": -0.2749562241137028,
+    "switch_frames": 122,
+    "switch_mean_epe_gain_512px": -0.16740945714419006,
+    "worst_regressions": [
+      {
+        "sequence": "photo-0306-02",
+        "stem": "000062",
+        "reference_epe_512px": 26.144319534301758,
+        "candidate_epe_512px": 52.40695571899414,
+        "epe_gain_512px": -26.262636184692383,
+        "keyframe": 0,
+        "reason": "propagated",
+        "reference_frame_ms": 309.5515000168234,
+        "candidate_frame_ms": 356.48160008713603
+      },
+      {
+        "sequence": "photo-0306-02",
+        "stem": "000061",
+        "reference_epe_512px": 26.56165313720703,
+        "candidate_epe_512px": 52.80889129638672,
+        "epe_gain_512px": -26.247238159179688,
+        "keyframe": 0,
+        "reason": "propagated",
+        "reference_frame_ms": 303.54550015181303,
+        "candidate_frame_ms": 359.78739988058805
+      },
+      {
+        "sequence": "photo-0306-02",
+        "stem": "000060",
+        "reference_epe_512px": 25.911834716796875,
+        "candidate_epe_512px": 51.955223083496094,
+        "epe_gain_512px": -26.04338836669922,
+        "keyframe": 0,
+        "reason": "propagated",
+        "reference_frame_ms": 311.17699993774295,
+        "candidate_frame_ms": 372.02939996495843
+      },
+      {
+        "sequence": "photo-0306-02",
+        "stem": "000059",
+        "reference_epe_512px": 25.886194229125977,
+        "candidate_epe_512px": 51.901206970214844,
+        "epe_gain_512px": -26.015012741088867,
+        "keyframe": 0,
+        "reason": "propagated",
+        "reference_frame_ms": 312.6867001410574,
+        "candidate_frame_ms": 359.5167000312358
+      },
+      {
+        "sequence": "photo-0306-02",
+        "stem": "000058",
+        "reference_epe_512px": 25.787254333496094,
+        "candidate_epe_512px": 51.67815017700195,
+        "epe_gain_512px": -25.89089584350586,
+        "keyframe": 0,
+        "reason": "propagated",
+        "reference_frame_ms": 506.8091999273747,
+        "candidate_frame_ms": 349.67849985696375
+      },
+      {
+        "sequence": "photo-0306-02",
+        "stem": "000057",
+        "reference_epe_512px": 28.38691520690918,
+        "candidate_epe_512px": 52.18419647216797,
+        "epe_gain_512px": -23.79728126525879,
+        "keyframe": 0,
+        "reason": "propagated",
+        "reference_frame_ms": 313.64840012975037,
+        "candidate_frame_ms": 341.39120019972324
+      },
+      {
+        "sequence": "photo-0306-02",
+        "stem": "000056",
+        "reference_epe_512px": 28.13887596130371,
+        "candidate_epe_512px": 51.863033294677734,
+        "epe_gain_512px": -23.724157333374023,
+        "keyframe": 0,
+        "reason": "propagated",
+        "reference_frame_ms": 311.34729995392263,
+        "candidate_frame_ms": 365.50730001181364
+      },
+      {
+        "sequence": "photo-0306-02",
+        "stem": "000055",
+        "reference_epe_512px": 28.032989501953125,
+        "candidate_epe_512px": 51.70052719116211,
+        "epe_gain_512px": -23.667537689208984,
+        "keyframe": 1,
+        "reason": "maximum_interval",
+        "reference_frame_ms": 306.84460001066327,
+        "candidate_frame_ms": 586.9232001714408
+      },
+      {
+        "sequence": "photo-0319-18",
+        "stem": "000054",
+        "reference_epe_512px": 7.34180212020874,
+        "candidate_epe_512px": 25.65692710876465,
+        "epe_gain_512px": -18.315124988555908,
+        "keyframe": 0,
+        "reason": "propagated",
+        "reference_frame_ms": 310.46690000221133,
+        "candidate_frame_ms": 341.1824000068009
+      },
+      {
+        "sequence": "photo-0319-18",
+        "stem": "000052",
+        "reference_epe_512px": 6.867983818054199,
+        "candidate_epe_512px": 25.145029067993164,
+        "epe_gain_512px": -18.277045249938965,
+        "keyframe": 0,
+        "reason": "propagated",
+        "reference_frame_ms": 313.47159994766116,
+        "candidate_frame_ms": 342.3211998306215
+      }
+    ]
+  },
+  "test_accessed": false
+}

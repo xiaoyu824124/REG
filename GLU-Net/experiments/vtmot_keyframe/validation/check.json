@@ -1,0 +1,33 @@
+{
+  "geometry": {
+    "identity_translation_rotation": "passed",
+    "out_of_bounds": "passed",
+    "flow": "backward XY, current VI target to current IR source"
+  },
+  "dataset": {
+    "sequence": "photo-0306-02",
+    "stem": "000000",
+    "valid_pixels": 248021,
+    "gt_warp_mse_255": 0.5357987284660339,
+    "zero_warp_mse_255": 479.130615234375,
+    "direction": "VI target -> IR/aligned-VI source, XY"
+  },
+  "temporal_direction": {
+    "forward_xy": [
+      2.999885082244873,
+      -1.9999431371688843
+    ],
+    "backward_xy": [
+      -2.9998724460601807,
+      1.999932050704956
+    ]
+  },
+  "sequences": [
+    "photo-0306-02",
+    "photo-0319-18",
+    "photo-0319-25",
+    "wurenji-0302-02"
+  ],
+  "frames": 800,
+  "test_accessed": false
+}

@@ -1,0 +1,20 @@
+{
+  "a1_sha256": "3dba8f1b4e9df6a0782d8244bd88bc7631e710ed76a7cb7830e0bba41a8405dc",
+  "pretrained_sha256": "2eac424ee4c9998cafed7ca60e7181d9f54adcee7e8e71250c5f2c7c0c9e50b1",
+  "split": "train",
+  "thresholds": {
+    "fb_pixel_threshold": 1.5,
+    "minimum_valid_fraction": 0.84595947265625,
+    "maximum_fb_median_px": 0.018326351977884774,
+    "maximum_motion_median_px": 1.4702790975570679,
+    "transition_max_flow_difference_px": 2.0,
+    "fixed_interval": 5,
+    "adaptive_max_interval": 8,
+    "calibration_counts": {
+      "valid_fraction": 152,
+      "fb_median_px": 152,
+      "motion_median_px": 152
+    },
+    "threshold_source": "VTMOT train input/prediction only; GT not read"
+  }
+}

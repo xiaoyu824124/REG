@@ -1,0 +1,3413 @@
+{
+  "method": "baseline",
+  "split": "eval",
+  "a1_sha256": "3dba8f1b4e9df6a0782d8244bd88bc7631e710ed76a7cb7830e0bba41a8405dc",
+  "coarse_sha256": "54583d9b9bc6f1b61db4f918bc45b47cdbd41405c973a3e11411539c88ab71e0",
+  "pretrained_sha256": "2eac424ee4c9998cafed7ca60e7181d9f54adcee7e8e71250c5f2c7c0c9e50b1",
+  "preprocess": "common center crop plus bilinear resize to 512x512",
+  "direction": "current visible_mis target -> current infrared source; XY",
+  "gt_mask": "mapped GT source inside 512x512; identical for all methods",
+  "timing": "A1 GPU synchronized; temporal 4x Farneback; per-frame compute, I/O and metrics excluded",
+  "a1_parameters": 17345115,
+  "subset_limits": {
+    "max_sequences": 0,
+    "max_frames": 0
+  },
+  "secondary_metrics": "registration-only proxies on visible_mis vs warped IR; ITF/T-SSIM on warped IR video, not fusion output",
+  "summary": {
+    "frames": 800,
+    "gt_valid_pixels": 204309555,
+    "pixel_weighted_epe_512px": 14.097600290165087,
+    "pixel_weighted_zero_epe_512px": 9.029688770402068,
+    "frame_mean_epe_512px": 14.073979882895946,
+    "keyframe_fraction": 1.0,
+    "total_compute_seconds": 71.8866992041003,
+    "per_sequence": {
+      "photo-0306-02": {
+        "epe_512px": 32.062691841125485,
+        "zero_epe_512px": 8.692574654817582,
+        "gt_valid_fraction": 0.9748345375061035,
+        "prediction_valid_fraction": 0.9031129646301269,
+        "nmi": 0.20204374327202893,
+        "edge_information_retention": 0.4924344381690025,
+        "edge_overlap_f1_3x3": 0.6424626400409477,
+        "lncc17_squared": 0.15261639835712487,
+        "itf_255": 11.419083887608208,
+        "t_ssim": 0.7846994346110665,
+        "visible_gt_mse": 0.017996015111567856,
+        "visible_gt_ncc": 0.7592999937723716,
+        "frame_ms": 92.6078050036449,
+        "frames": 200,
+        "keyframe_fraction": 1.0,
+        "keyframes": [
+          {
+            "stem": "000000",
+            "reason": "sequence_start"
+          },
+          {
+            "stem": "000001",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000002",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000003",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000004",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000005",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000006",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000007",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000008",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000009",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000010",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000011",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000012",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000013",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000014",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000015",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000016",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000017",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000018",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000019",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000020",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000021",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000022",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000023",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000024",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000025",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000026",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000027",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000028",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000029",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000030",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000031",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000032",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000033",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000034",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000035",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000036",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000037",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000038",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000039",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000040",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000041",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000042",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000043",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000044",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000045",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000046",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000047",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000048",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000049",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000050",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000051",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000052",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000053",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000054",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000055",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000056",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000057",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000058",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000059",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000060",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000061",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000062",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000063",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000064",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000065",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000066",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000067",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000068",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000069",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000070",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000071",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000072",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000073",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000074",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000075",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000076",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000077",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000078",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000079",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000080",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000081",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000082",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000083",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000084",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000085",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000086",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000087",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000088",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000089",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000090",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000091",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000092",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000093",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000094",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000095",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000096",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000097",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000098",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000099",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000100",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000101",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000102",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000103",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000104",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000105",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000106",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000107",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000108",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000109",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000110",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000111",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000112",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000113",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000114",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000115",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000116",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000117",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000118",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000119",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000120",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000121",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000122",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000123",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000124",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000125",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000126",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000127",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000128",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000129",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000130",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000131",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000132",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000133",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000134",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000135",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000136",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000137",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000138",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000139",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000140",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000141",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000142",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000143",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000144",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000145",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000146",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000147",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000148",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000149",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000150",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000151",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000152",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000153",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000154",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000155",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000156",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000157",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000158",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000159",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000160",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000161",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000162",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000163",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000164",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000165",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000166",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000167",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000168",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000169",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000170",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000171",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000172",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000173",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000174",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000175",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000176",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000177",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000178",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000179",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000180",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000181",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000182",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000183",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000184",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000185",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000186",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000187",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000188",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000189",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000190",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000191",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000192",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000193",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000194",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000195",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000196",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000197",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000198",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000199",
+            "reason": "every_frame"
+          }
+        ],
+        "total_compute_seconds": 18.52156100072898,
+        "worst_frames": [
+          {
+            "stem": "000080",
+            "epe_512px": 52.70806884765625
+          },
+          {
+            "stem": "000070",
+            "epe_512px": 52.184814453125
+          },
+          {
+            "stem": "000055",
+            "epe_512px": 51.70051193237305
+          },
+          {
+            "stem": "000071",
+            "epe_512px": 49.54966354370117
+          },
+          {
+            "stem": "000045",
+            "epe_512px": 47.576393127441406
+          }
+        ]
+      },
+      "photo-0319-18": {
+        "epe_512px": 13.81936684370041,
+        "zero_epe_512px": 7.611705638170243,
+        "gt_valid_fraction": 0.9768594551086426,
+        "prediction_valid_fraction": 0.934161319732666,
+        "nmi": 0.18024818969241807,
+        "edge_information_retention": 0.3967019818723202,
+        "edge_overlap_f1_3x3": 0.6606931260330754,
+        "lncc17_squared": 0.19711621206234534,
+        "itf_255": 4.724632646570254,
+        "t_ssim": 0.9029318387783951,
+        "visible_gt_mse": 0.016016827908893846,
+        "visible_gt_ncc": 0.7936638734498743,
+        "frame_ms": 86.50311250821687,
+        "frames": 200,
+        "keyframe_fraction": 1.0,
+        "keyframes": [
+          {
+            "stem": "000000",
+            "reason": "sequence_start"
+          },
+          {
+            "stem": "000001",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000002",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000003",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000004",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000005",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000006",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000007",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000008",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000009",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000010",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000011",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000012",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000013",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000014",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000015",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000016",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000017",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000018",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000019",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000020",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000021",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000022",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000023",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000024",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000025",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000026",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000027",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000028",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000029",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000030",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000031",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000032",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000033",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000034",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000035",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000036",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000037",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000038",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000039",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000040",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000041",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000042",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000043",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000044",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000045",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000046",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000047",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000048",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000049",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000050",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000051",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000052",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000053",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000054",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000055",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000056",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000057",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000058",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000059",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000060",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000061",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000062",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000063",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000064",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000065",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000066",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000067",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000068",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000069",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000070",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000071",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000072",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000073",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000074",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000075",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000076",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000077",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000078",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000079",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000080",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000081",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000082",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000083",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000084",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000085",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000086",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000087",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000088",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000089",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000090",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000091",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000092",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000093",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000094",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000095",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000096",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000097",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000098",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000099",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000100",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000101",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000102",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000103",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000104",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000105",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000106",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000107",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000108",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000109",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000110",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000111",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000112",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000113",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000114",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000115",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000116",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000117",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000118",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000119",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000120",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000121",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000122",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000123",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000124",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000125",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000126",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000127",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000128",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000129",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000130",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000131",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000132",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000133",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000134",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000135",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000136",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000137",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000138",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000139",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000140",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000141",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000142",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000143",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000144",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000145",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000146",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000147",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000148",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000149",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000150",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000151",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000152",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000153",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000154",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000155",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000156",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000157",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000158",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000159",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000160",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000161",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000162",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000163",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000164",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000165",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000166",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000167",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000168",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000169",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000170",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000171",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000172",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000173",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000174",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000175",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000176",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000177",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000178",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000179",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000180",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000181",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000182",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000183",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000184",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000185",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000186",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000187",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000188",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000189",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000190",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000191",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000192",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000193",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000194",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000195",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000196",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000197",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000198",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000199",
+            "reason": "every_frame"
+          }
+        ],
+        "total_compute_seconds": 17.300622501643375,
+        "worst_frames": [
+          {
+            "stem": "000023",
+            "epe_512px": 29.38734245300293
+          },
+          {
+            "stem": "000095",
+            "epe_512px": 29.28432846069336
+          },
+          {
+            "stem": "000096",
+            "epe_512px": 27.71778106689453
+          },
+          {
+            "stem": "000190",
+            "epe_512px": 27.413583755493164
+          },
+          {
+            "stem": "000182",
+            "epe_512px": 25.398103713989258
+          }
+        ]
+      },
+      "photo-0319-25": {
+        "epe_512px": 7.462752857208252,
+        "zero_epe_512px": 9.977733626365662,
+        "gt_valid_fraction": 0.9742646980285644,
+        "prediction_valid_fraction": 0.9704341316223144,
+        "nmi": 0.1525899003514948,
+        "edge_information_retention": 0.25395582616329193,
+        "edge_overlap_f1_3x3": 0.5989501856858306,
+        "lncc17_squared": 0.21166389555863588,
+        "itf_255": 3.4920272827148438,
+        "t_ssim": 0.9148613924357161,
+        "visible_gt_mse": 0.017393600044475526,
+        "visible_gt_ncc": 0.8859759487514397,
+        "frame_ms": 88.21112749748863,
+        "frames": 200,
+        "keyframe_fraction": 1.0,
+        "keyframes": [
+          {
+            "stem": "000000",
+            "reason": "sequence_start"
+          },
+          {
+            "stem": "000001",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000002",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000003",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000004",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000005",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000006",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000007",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000008",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000009",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000010",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000011",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000012",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000013",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000014",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000015",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000016",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000017",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000018",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000019",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000020",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000021",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000022",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000023",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000024",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000025",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000026",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000027",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000028",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000029",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000030",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000031",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000032",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000033",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000034",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000035",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000036",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000037",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000038",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000039",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000040",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000041",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000042",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000043",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000044",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000045",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000046",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000047",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000048",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000049",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000050",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000051",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000052",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000053",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000054",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000055",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000056",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000057",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000058",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000059",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000060",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000061",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000062",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000063",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000064",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000065",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000066",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000067",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000068",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000069",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000070",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000071",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000072",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000073",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000074",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000075",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000076",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000077",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000078",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000079",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000080",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000081",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000082",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000083",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000084",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000085",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000086",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000087",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000088",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000089",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000090",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000091",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000092",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000093",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000094",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000095",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000096",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000097",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000098",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000099",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000100",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000101",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000102",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000103",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000104",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000105",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000106",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000107",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000108",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000109",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000110",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000111",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000112",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000113",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000114",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000115",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000116",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000117",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000118",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000119",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000120",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000121",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000122",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000123",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000124",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000125",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000126",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000127",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000128",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000129",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000130",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000131",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000132",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000133",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000134",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000135",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000136",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000137",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000138",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000139",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000140",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000141",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000142",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000143",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000144",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000145",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000146",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000147",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000148",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000149",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000150",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000151",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000152",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000153",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000154",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000155",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000156",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000157",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000158",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000159",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000160",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000161",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000162",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000163",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000164",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000165",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000166",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000167",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000168",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000169",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000170",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000171",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000172",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000173",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000174",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000175",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000176",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000177",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000178",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000179",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000180",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000181",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000182",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000183",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000184",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000185",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000186",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000187",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000188",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000189",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000190",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000191",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000192",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000193",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000194",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000195",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000196",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000197",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000198",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000199",
+            "reason": "every_frame"
+          }
+        ],
+        "total_compute_seconds": 17.642225499497727,
+        "worst_frames": [
+          {
+            "stem": "000128",
+            "epe_512px": 9.82689094543457
+          },
+          {
+            "stem": "000127",
+            "epe_512px": 9.690751075744629
+          },
+          {
+            "stem": "000129",
+            "epe_512px": 9.344808578491211
+          },
+          {
+            "stem": "000055",
+            "epe_512px": 9.113245964050293
+          },
+          {
+            "stem": "000126",
+            "epe_512px": 9.040375709533691
+          }
+        ]
+      },
+      "wurenji-0302-02": {
+        "epe_512px": 2.951107989549637,
+        "zero_epe_512px": 9.964000145196914,
+        "gt_valid_fraction": 0.9709368133544922,
+        "prediction_valid_fraction": 0.9812982749938964,
+        "nmi": 0.1615962548644828,
+        "edge_information_retention": 0.2738923126459122,
+        "edge_overlap_f1_3x3": 0.5281269771119372,
+        "lncc17_squared": 0.14424074165419995,
+        "itf_255": 2.0509842340670636,
+        "t_ssim": 0.9479689178754337,
+        "visible_gt_mse": 0.0011593663849507989,
+        "visible_gt_ncc": 0.9083393317377321,
+        "frame_ms": 92.11145101115108,
+        "frames": 200,
+        "keyframe_fraction": 1.0,
+        "keyframes": [
+          {
+            "stem": "000000",
+            "reason": "sequence_start"
+          },
+          {
+            "stem": "000001",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000002",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000003",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000004",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000005",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000006",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000007",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000008",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000009",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000010",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000011",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000012",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000013",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000014",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000015",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000016",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000017",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000018",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000019",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000020",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000021",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000022",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000023",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000024",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000025",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000026",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000027",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000028",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000029",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000030",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000031",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000032",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000033",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000034",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000035",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000036",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000037",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000038",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000039",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000040",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000041",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000042",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000043",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000044",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000045",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000046",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000047",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000048",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000049",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000050",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000051",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000052",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000053",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000054",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000055",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000056",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000057",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000058",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000059",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000060",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000061",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000062",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000063",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000064",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000065",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000066",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000067",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000068",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000069",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000070",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000071",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000072",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000073",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000074",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000075",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000076",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000077",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000078",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000079",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000080",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000081",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000082",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000083",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000084",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000085",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000086",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000087",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000088",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000089",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000090",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000091",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000092",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000093",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000094",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000095",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000096",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000097",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000098",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000099",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000100",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000101",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000102",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000103",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000104",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000105",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000106",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000107",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000108",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000109",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000110",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000111",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000112",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000113",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000114",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000115",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000116",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000117",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000118",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000119",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000120",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000121",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000122",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000123",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000124",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000125",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000126",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000127",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000128",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000129",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000130",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000131",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000132",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000133",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000134",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000135",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000136",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000137",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000138",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000139",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000140",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000141",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000142",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000143",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000144",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000145",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000146",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000147",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000148",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000149",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000150",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000151",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000152",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000153",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000154",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000155",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000156",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000157",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000158",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000159",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000160",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000161",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000162",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000163",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000164",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000165",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000166",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000167",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000168",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000169",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000170",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000171",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000172",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000173",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000174",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000175",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000176",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000177",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000178",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000179",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000180",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000181",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000182",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000183",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000184",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000185",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000186",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000187",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000188",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000189",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000190",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000191",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000192",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000193",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000194",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000195",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000196",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000197",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000198",
+            "reason": "every_frame"
+          },
+          {
+            "stem": "000199",
+            "reason": "every_frame"
+          }
+        ],
+        "total_compute_seconds": 18.422290202230215,
+        "worst_frames": [
+          {
+            "stem": "000101",
+            "epe_512px": 8.5880765914917
+          },
+          {
+            "stem": "000100",
+            "epe_512px": 7.921333312988281
+          },
+          {
+            "stem": "000024",
+            "epe_512px": 6.103917121887207
+          },
+          {
+            "stem": "000028",
+            "epe_512px": 5.777290344238281
+          },
+          {
+            "stem": "000034",
+            "epe_512px": 5.372718811035156
+          }
+        ]
+      }
+    },
+    "frame_mean_metrics": {
+      "epe_512px": 14.073979882895946,
+      "zero_epe_512px": 9.0615035161376,
+      "gt_valid_fraction": 0.9742238759994507,
+      "prediction_valid_fraction": 0.947251672744751,
+      "nmi": 0.17411952204510617,
+      "edge_information_retention": 0.3542461397126317,
+      "edge_overlap_f1_3x3": 0.6075582322179477,
+      "lncc17_squared": 0.1764093119080765,
+      "itf_255": 5.421682012740092,
+      "t_ssim": 0.8876153959251528,
+      "visible_gt_mse": 0.013141452362472009,
+      "visible_gt_ncc": 0.8368197869278543,
+      "frame_ms": 89.85837400512537
+    }
+  },
+  "test_accessed": false,
+  "wall_seconds_including_io_metrics": 208.94697010004893
+}
