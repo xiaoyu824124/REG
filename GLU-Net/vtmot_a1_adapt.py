@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import random
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
@@ -148,24 +149,44 @@ def train_epoch(model, optimizer, train_videos, device, epoch, check=False):
             'frame_stride_phase': phase}
 
 
-@torch.inference_mode()
+@contextmanager
+def frozen_inference(model):
+    """Evaluate with the same requires_grad=False path as deployed A1."""
+    parameters = list(model.parameters())
+    flags = [parameter.requires_grad for parameter in parameters]
+    coarse_graph = model.base.train_coarse_encoder
+    training = model.training
+    try:
+        for parameter in parameters:
+            parameter.requires_grad_(False)
+        model.base.train_coarse_encoder = False
+        model.eval()
+        with torch.inference_mode():
+            yield
+    finally:
+        for parameter, flag in zip(parameters, flags):
+            parameter.requires_grad_(flag)
+        model.base.train_coarse_encoder = coarse_graph
+        model.train(training)
+
+
 def evaluate_vtmot(model, videos, device, frame_limit=0):
-    model.eval()
     rows = []
-    for batch in DataLoader(Frames(videos), batch_size=1, shuffle=False, num_workers=0):
-        prediction = model(batch, device)
-        truth = batch['flow_map'].to(device).float()
-        valid = batch['correspondence_mask'].to(device).bool()
-        number = int(valid.sum())
-        row = {'sequence': batch['name'][0].split('/')[0],
-               'stem': batch['name'][0].split('/')[1], 'valid_pixels': number}
-        for stage in ('coarse16', 'local32', 'local64', 'final512'):
-            error = torch.linalg.vector_norm(prediction[stage]-truth, dim=1)
-            row[f'{stage}_epe_512px'] = float(error[valid].mean())
-        row['zero_epe_512px'] = float(torch.linalg.vector_norm(truth, dim=1)[valid].mean())
-        rows.append(row)
-        if frame_limit and len(rows) >= frame_limit:
-            break
+    with frozen_inference(model):
+        for batch in DataLoader(Frames(videos), batch_size=1, shuffle=False, num_workers=0):
+            prediction = model(batch, device)
+            truth = batch['flow_map'].to(device).float()
+            valid = batch['correspondence_mask'].to(device).bool()
+            number = int(valid.sum())
+            row = {'sequence': batch['name'][0].split('/')[0],
+                   'stem': batch['name'][0].split('/')[1], 'valid_pixels': number}
+            for stage in ('coarse16', 'local32', 'local64', 'final512'):
+                error = torch.linalg.vector_norm(prediction[stage]-truth, dim=1)
+                row[f'{stage}_epe_512px'] = float(error[valid].mean())
+            row['zero_epe_512px'] = float(torch.linalg.vector_norm(truth, dim=1)[valid].mean())
+            rows.append(row)
+            if frame_limit and len(rows) >= frame_limit:
+                break
     return rows, summarize_vtmot(rows)
 
 
@@ -188,6 +209,14 @@ def save_csv(path, rows):
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
+
+
+def diagnosis_frames_path(report_path):
+    for name in ('diagnosis_per_frame.csv', 'per_frame.csv'):
+        candidate = report_path.with_name(name)
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(f'per-frame diagnosis next to {report_path}')
 
 
 def checkpoint(path, model, optimizer, scheduler, args, epoch, steps, score, history):
@@ -248,6 +277,15 @@ def check_one_update(args, model, train_videos, val_videos, device):
                            f'max_abs={initial_difference}, mean_abs={initial_mean_difference}, '
                            f'repeat={repeat_difference}, flag={flag_difference}, '
                            f'mode={mode_difference}')
+    _, deployment_check = evaluate_vtmot(model, val_videos, device, frame_limit=1)
+    with diagnosis_frames_path(args.diagnosis_report).open(
+            newline='', encoding='utf-8-sig') as stream:
+        locked_first = next(csv.DictReader(stream))
+    deployment_epe = deployment_check['all']['stage_epe_512px']['final512']
+    locked_epe = float(locked_first['final512_epe_512px'])
+    if abs(deployment_epe-locked_epe) > .01:
+        raise RuntimeError(f'epoch-0 deployment path differs from locked A1: '
+                           f'{deployment_epe} vs {locked_epe}')
     optimizer = torch.optim.AdamW(active, lr=LEARNING_RATE)
     loss, parts, _ = objective(model(batch, device), batch, device, hierarchical=True)
     loss.backward()
@@ -269,6 +307,8 @@ def check_one_update(args, model, train_videos, val_videos, device):
         'baseline_repeat_max_abs_difference': repeat_difference,
         'coarse_graph_flag_max_abs_difference': flag_difference,
         'train_mode_max_abs_difference': mode_difference,
+        'epoch0_deployment_epe_512px': deployment_epe,
+        'locked_first_frame_epe_512px': locked_epe,
         'loss': float(loss),
         'parts': {k: float(v) for k, v in parts.items()},
         'preclip_gradient_norm': float(preclip), 'validation': validation,
@@ -289,8 +329,8 @@ def evaluate_roadscene(args, model, device):
     dataset = RoadScenePairs(args.roadscene_root, 'val')
     rows, summary = [], {}
     for label, candidate in (('original', load_a1(args, device)), ('adapted', model)):
-        candidate.eval()
-        these = evaluate_fine(candidate, dataset, device, timed=True)
+        with frozen_inference(candidate):
+            these = evaluate_fine(candidate, dataset, device, timed=True)
         rows.extend([{'model': label, **r} for r in these])
         summary[label] = summarize(these)
     save_csv(args.output/'roadscene_val_per_pair.csv', rows)
@@ -372,7 +412,7 @@ def main():
     model.eval()
     adapted_rows, adapted = evaluate_vtmot(model, val_videos, device)
     save_csv(args.output/'vtmot_val_per_frame.csv', adapted_rows)
-    with args.diagnosis_report.with_name('diagnosis_per_frame.csv').open(
+    with diagnosis_frames_path(args.diagnosis_report).open(
             newline='', encoding='utf-8-sig') as stream:
         locked_frames = {(r['sequence'], r['stem']): r for r in csv.DictReader(stream)}
     paired = []
