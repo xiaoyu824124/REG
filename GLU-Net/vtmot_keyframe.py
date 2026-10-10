@@ -21,6 +21,7 @@ import torch
 from datasets.vtmot_video import VTMOTVideos, direction_check
 from roadscene_fusion_hierarchical import make_arm
 from vtmot_geometry import backward_warp, grid, propagate, sample, self_test
+import models.our_models.GLUNet as glunet
 
 
 def sha256(path):
@@ -37,18 +38,44 @@ def save_json(path, value):
                     encoding='utf-8')
 
 
+def install_mutual_guard():
+    """Use the same nonnegative MutualMatching input as A1 adaptation."""
+    original = glunet.MutualMatching
+    glunet.MutualMatching = lambda correlation: original(correlation.clamp_min(0))
+    zero = glunet.MutualMatching(torch.zeros(1, 1, 16, 16, 16, 16))
+    if not torch.isfinite(zero).all() or torch.count_nonzero(zero):
+        raise RuntimeError('all-zero MutualMatching normalization is unsafe')
+
+
 def load_a1(args, device):
     recipe = SimpleNamespace(pretrained=args.pretrained,
                              coarse_checkpoint=args.coarse_checkpoint)
     model, _ = make_arm(recipe, 'A1', device)
     payload = torch.load(args.a1_checkpoint, map_location='cpu', weights_only=False)
-    if payload.get('arm') != 'A1':
-        raise ValueError('checkpoint is not the selected A1 arm')
+    if payload.get('arm') == 'A1':
+        checkpoint_recipe = 'roadscene_a1'
+    elif (payload.get('recipe') == 'vtmot_a1_coarse_only_v1' and
+          payload.get('stage') == 'coarse'):
+        checkpoint_recipe = 'vtmot_a1_coarse_adapted'
+        if args.source_a1_checkpoint is None:
+            raise ValueError('adapted checkpoint requires --source-a1-checkpoint')
+        if payload.get('source_a1_sha256') != sha256(args.source_a1_checkpoint):
+            raise ValueError('adapted checkpoint source A1 hash mismatch')
+        if payload.get('split_sha256') != sha256(args.split_file):
+            raise ValueError('adapted checkpoint VTMOT split hash mismatch')
+        if payload.get('test_accessed') is not False:
+            raise ValueError('adapted checkpoint does not document locked test split')
+    else:
+        raise ValueError('checkpoint is neither RoadScene A1 nor VTMOT coarse-adapted A1')
     if payload.get('pretrained_sha256') != sha256(args.pretrained):
         raise ValueError('A1 and base pretrained weights do not match')
     if payload.get('coarse_sha256') != sha256(args.coarse_checkpoint):
         raise ValueError('A1 and fixed coarse checkpoint do not match')
     model.load_state_dict(payload['model_state_dict'], strict=True)
+    model.checkpoint_recipe = checkpoint_recipe
+    model.adapted_validation_epe_512px = (payload.get('val_final_epe_512px')
+                                           if checkpoint_recipe == 'vtmot_a1_coarse_adapted'
+                                           else None)
     model.eval()
     for parameter in model.parameters():
         parameter.requires_grad_(False)
@@ -492,6 +519,11 @@ def require_baseline(args):
     payload = json.loads(path.read_text(encoding='utf-8'))
     if payload['a1_sha256'] != sha256(args.a1_checkpoint):
         raise ValueError('baseline was created with another A1 weight')
+    if payload.get('subset_limits') != {'max_sequences': args.max_sequences,
+                                        'max_frames': args.max_frames}:
+        raise ValueError('baseline subset does not match this run')
+    if not args.max_sequences and not args.max_frames and payload['summary']['frames'] != 800:
+        raise ValueError('formal baseline must include all 800 validation frames')
 
 
 def main():
@@ -503,6 +535,8 @@ def main():
     parser.add_argument('--pretrained', required=True, type=Path)
     parser.add_argument('--coarse-checkpoint', required=True, type=Path)
     parser.add_argument('--a1-checkpoint', required=True, type=Path)
+    parser.add_argument('--source-a1-checkpoint', type=Path,
+                        help='RoadScene A1 source checkpoint when --a1-checkpoint is VTMOT-adapted')
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--max-sequences', type=int, default=0)
     parser.add_argument('--max-frames', type=int, default=0)
@@ -533,6 +567,7 @@ def main():
         save_json(args.output / 'check.json', checks)
         return
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    install_mutual_guard()
     model = load_a1(args, device)
     if args.stage == 'calibrate':
         path = args.output / 'train_thresholds.json'
@@ -547,6 +582,11 @@ def main():
     config = load_config(args) if args.stage != 'baseline' else None
     methods = {'baseline': ('baseline',), 'compare': ('fixed', 'adaptive'),
                'transition': ('transition',)}[args.stage]
+    # Compile CUDA correlation kernels before timing any method. The warm-up
+    # uses the same first validation frame and is excluded from per-frame cost.
+    first_sequence = next(iter(dataset.sequences))
+    first_stem = dataset.sequences[first_sequence][0]
+    predict_a1(model, dataset.input_frame(first_sequence, first_stem), device)
     evaluated = {}
     for method in methods:
         out = args.output / method
@@ -556,6 +596,7 @@ def main():
         rows = run_method(args, dataset, model, device, method, config)
         evaluated[method] = rows
         report = {'method': method, 'split': 'eval', 'a1_sha256': sha256(args.a1_checkpoint),
+                  'a1_checkpoint_recipe': model.checkpoint_recipe,
                   'coarse_sha256': sha256(args.coarse_checkpoint),
                   'pretrained_sha256': sha256(args.pretrained),
                   'preprocess': 'common center crop plus bilinear resize to 512x512',
@@ -569,6 +610,12 @@ def main():
                                        'ITF/T-SSIM on warped IR video, not fusion output',
                   'summary': summarise(rows)['all'], 'test_accessed': False}
         report['wall_seconds_including_io_metrics'] = time.perf_counter() - wall_start
+        if (method == 'baseline' and not args.max_sequences and not args.max_frames
+                and model.adapted_validation_epe_512px is not None):
+            measured = report['summary']['pixel_weighted_epe_512px']
+            if abs(measured - model.adapted_validation_epe_512px) > .01:
+                raise RuntimeError('adapted A1 baseline differs from selected validation EPE: '
+                                   f'{measured} vs {model.adapted_validation_epe_512px}')
         if method in ('fixed', 'adaptive'):
             report['paired_vs_baseline'] = paired_report(
                 rows, args.output / 'baseline' / 'per_frame.csv', out, 'baseline')
