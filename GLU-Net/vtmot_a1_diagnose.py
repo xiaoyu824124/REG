@@ -13,7 +13,8 @@ import torch.nn.functional as F
 
 from datasets.vtmot_video import VTMOTVideos
 from vtmot_geometry import backward_warp
-from vtmot_keyframe import load_a1, save_json, sha256
+from vtmot_a1_adapt import load_a1, save_json
+from roadscene_coarse import sha256_file as sha256
 import models.our_models.GLUNet as glunet
 
 

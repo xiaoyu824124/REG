@@ -15,6 +15,7 @@ import os
 import random
 from contextlib import contextmanager
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import torch
@@ -23,10 +24,9 @@ from torch.utils.data import DataLoader, Dataset
 from datasets.roadscene import RoadScenePairs
 from datasets.vtmot_video import VTMOTVideos
 from roadscene_coarse import sha256_file
-from roadscene_fusion_hierarchical import augment, objective
+from roadscene_fusion_hierarchical import augment, make_arm, objective
 from roadscene_no_dcn import (COARSE_NAMES, LOCAL_NAMES, UP_NAMES,
                               check_no_dcn, evaluate_fine, summarize)
-from vtmot_keyframe import load_a1, save_json
 import models.our_models.GLUNet as glunet
 
 
@@ -37,6 +37,31 @@ MIN_DELTA = .02
 TRAIN_FRAME_STRIDE = 5  # Rotate phases 0..4; all 7600 frames seen per five epochs.
 LEARNING_RATE = 1e-5
 BATCH_SIZE = 2
+
+
+def save_json(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False,
+                               allow_nan=False), encoding='utf-8')
+
+
+def load_a1(args, device):
+    """Load the selected single-frame A1 without any keyframe dependency."""
+    recipe = SimpleNamespace(pretrained=args.pretrained,
+                             coarse_checkpoint=args.coarse_checkpoint)
+    model, _ = make_arm(recipe, 'A1', device)
+    payload = torch.load(args.a1_checkpoint, map_location='cpu', weights_only=False)
+    if payload.get('arm') != 'A1':
+        raise ValueError('checkpoint is not the selected A1 arm')
+    if payload.get('pretrained_sha256') != sha256_file(args.pretrained):
+        raise ValueError('A1 and base pretrained weights do not match')
+    if payload.get('coarse_sha256') != sha256_file(args.coarse_checkpoint):
+        raise ValueError('A1 and fixed coarse checkpoint do not match')
+    model.load_state_dict(payload['model_state_dict'], strict=True)
+    model.eval()
+    for parameter in model.parameters():
+        parameter.requires_grad_(False)
+    return model
 
 
 class Frames(Dataset):
