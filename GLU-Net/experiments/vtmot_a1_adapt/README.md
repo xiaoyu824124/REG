@@ -29,17 +29,17 @@
 
 从同一 A1 权重启动，仅开放 VGG `level_4`、DNS、全局 SA/CA 与粗 flow 解码器；旧局部层、预训练 flow 上采样层及全部 BN 统计冻结。不改网络、`MutualMatching` 非负保护、分层 Charbonnier 损失（`L_final + 0.1 L_32 + 0.2 L_64`）或关键帧阈值。每轮在 38 条训练序列按步长 5 取帧，相位逐轮轮换；每 5 轮覆盖所有 7600 帧。最多 30 轮，批量 2，AdamW 学习率 `1e-5`，梯度裁剪 1，验证集最终 EPE 提前停止（耐心 6 轮，最小实质进步 0.02px）。每轮在完整 800 帧上验证，按全局有效像素加权最终 EPE 保存独立最佳检查点，包含优化器、调度器、随机状态和累计步数。
 
-单帧适配脚本在自身加载 A1 权重及保存 JSON，不导入 `vtmot_keyframe.py`，也不执行关键帧选择、传播或过渡。手动复制服务器文件时，本轮独立脚本更新只需重新复制 `vtmot_a1_adapt.py`；`vtmot_geometry.py` 仍是 VTMOT GT 坐标换算的数据接口依赖。
+单帧适配脚本在自身加载 A1 权重及保存 JSON，不导入 `vtmot_keyframe.py`，也不执行关键帧选择、传播或过渡。手动复制服务器文件时，需复制 `vtmot_a1_adapt.py` 和本目录的 `split.json`；`vtmot_geometry.py` 仍是 VTMOT GT 坐标换算的数据接口依赖。
 
 本地仅完成 1 训练帧、1 验证帧的两次更新检查：损失和梯度有限，旧局部层、上采样权重与 BN 状态未改变。启用粗层参数求导后，直接推理输出与冻结 A1 的逐像素平均绝对差为 0.0080px、最大差为 0.0776px；单纯切换训练模式或粗层计算图开关时差为 0。这是当前 CUDA 路径的数值差异，**不能声称逐位相同**。每轮正式验证会临时关闭全部参数梯度，以复现部署时的前向路径，然后恢复粗阶段训练状态。单帧的第 0 轮 EPE 与诊断相差约 0.0021px；正式训练前还会重测完整 800 帧的第 0 轮，并要求与固定参照的 EPE 相差不超过 0.01px。
 
 ### 在服务器运行
 
-以下命令在 `G:\cxj\REG\GLU-Net` 中执行。先把 `G:\cxj\VTMOT_misaligned` 改为服务器上真实的数据目录。检查命令只使用各 1 帧验证前向、反传及冻结状态；训练命令才使用 38 条训练序列与固定的 4 条验证序列。两个输出目录都应是新的空目录。
+以下命令在 `G:\cxj\REG\GLU-Net` 中执行。检查命令只使用各 1 帧验证前向、反传及冻结状态；训练命令才使用 38 条训练序列与固定的 4 条验证序列。两个输出目录都应是新的空目录。
 
 ```bat
-python vtmot_a1_adapt.py --stage check --data-root "G:\cxj\VTMOT_misaligned" --split-file experiments\vtmot_keyframe\split.json --pretrained pre_trained_models\GLUNet_DPED_CityScape_ADE.pth --coarse-checkpoint roadscene_runs\no_dcn_v1\best_coarse.pth --a1-checkpoint roadscene_runs\fusion_hierarchical_2x2\best_A1.pth --diagnosis-report experiments\vtmot_a1_adapt\diagnosis_val.json --output roadscene_runs\vtmot_a1_coarse_check
-python vtmot_a1_adapt.py --stage train --data-root "G:\cxj\VTMOT_misaligned" --split-file experiments\vtmot_keyframe\split.json --pretrained pre_trained_models\GLUNet_DPED_CityScape_ADE.pth --coarse-checkpoint roadscene_runs\no_dcn_v1\best_coarse.pth --a1-checkpoint roadscene_runs\fusion_hierarchical_2x2\best_A1.pth --diagnosis-report experiments\vtmot_a1_adapt\diagnosis_val.json --roadscene-root "G:\cxj\RoadScence" --output roadscene_runs\vtmot_a1_coarse_adapt
+python vtmot_a1_adapt.py --stage check --data-root "G:\cxj\VTMOT_misaligned" --split-file experiments\vtmot_a1_adapt\split.json --pretrained pre_trained_models\GLUNet_DPED_CityScape_ADE.pth --coarse-checkpoint roadscene_runs\no_dcn_v1\best_coarse.pth --a1-checkpoint roadscene_runs\fusion_hierarchical_2x2\best_A1.pth --diagnosis-report experiments\vtmot_a1_adapt\diagnosis_val.json --output roadscene_runs\vtmot_a1_coarse_check_v2
+python vtmot_a1_adapt.py --stage train --data-root "G:\cxj\VTMOT_misaligned" --split-file experiments\vtmot_a1_adapt\split.json --pretrained pre_trained_models\GLUNet_DPED_CityScape_ADE.pth --coarse-checkpoint roadscene_runs\no_dcn_v1\best_coarse.pth --a1-checkpoint roadscene_runs\fusion_hierarchical_2x2\best_A1.pth --diagnosis-report experiments\vtmot_a1_adapt\diagnosis_val.json --roadscene-root "G:\cxj\RoadScence" --output roadscene_runs\vtmot_a1_coarse_adapt
 ```
 
 训练完成后读取 `report_val.json`、`history.json`、`vtmot_val_per_frame.csv`、`vtmot_val_paired.csv`、`roadscene_val_per_pair.csv` 及 `best_adapted_a1.pth`。只有完整 VTMOT 验证集的适配 A1 最终 EPE 低于零 flow 的 9.030px，且至少两条序列各改善 0.1px，才重新测试关键帧传播。本轮旧过渡分支的 0/122 次放行应记为**“未实际测试到”**。已锁定的 RoadScene 22 对测试图像和 VTMOT 测试序列不用于选模型。
