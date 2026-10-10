@@ -96,8 +96,8 @@ class VTMOTVideos:
         return {'ir': ir, 'vi': vi, 'sequence': sequence, 'stem': stem,
                 'original_hw': ir_hw}
 
-    def evaluation_truth(self, sequence, stem, original_hw):
-        """Called strictly after a method has emitted its flow and trigger."""
+    def flow_truth(self, sequence, stem, original_hw):
+        """Ground-truth VI-to-IR flow; never used by registration decisions."""
         base = self.root / sequence
         h_original = np.load(base / 'gt_h' / f'{stem}.npy').astype(np.float64)
         affine, _ = resize_affine(original_hw, self.target_hw)
@@ -110,6 +110,12 @@ class VTMOTVideos:
         valid = (np.isfinite(flow).all(axis=-1) &
                  (mapped[..., 0] >= 0) & (mapped[..., 0] <= self.target_hw[1] - 1) &
                  (mapped[..., 1] >= 0) & (mapped[..., 1] <= self.target_hw[0] - 1))
+        return flow, valid
+
+    def evaluation_truth(self, sequence, stem, original_hw):
+        """Called strictly after a method has emitted its flow and trigger."""
+        base = self.root / sequence
+        flow, valid = self.flow_truth(sequence, stem, original_hw)
         aligned_visible, gt_hw = read_image(base / 'visible_gt' / f'{stem}.png',
                                              'RGB', self.target_hw)
         if gt_hw != original_hw:
