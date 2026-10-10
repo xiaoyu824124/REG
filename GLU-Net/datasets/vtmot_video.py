@@ -73,10 +73,15 @@ class VTMOTVideos:
                 # The released split JSON is sufficient on the training host:
                 # all 48 local sequence CSVs were audited against the sorted
                 # infrared stems and were identical (200 frames each).
-                stems = sorted(p.stem for p in (self.root / name / 'infrared').glob('*.jpg'))
+                # Some copies of VTMOT contain extra hash-suffixed duplicates
+                # (e.g. 000000-52201c087d8f.jpg). Use only the canonical
+                # six-digit filenames, matching the audited frame manifest.
+                stems = sorted(p.stem for p in (self.root / name / 'infrared').glob('*.jpg')
+                               if len(p.stem) == 6 and p.stem.isascii() and p.stem.isdigit())
                 if stems != [f'{index:06d}' for index in range(200)]:
-                    raise ValueError(f'{name} does not match audited 000000..000199 '
-                                     'frame manifest; provide per-sequence CSVs')
+                    raise ValueError(f'{name} does not contain the canonical '
+                                     '000000..000199 infrared frame manifest; '
+                                     'provide per-sequence CSVs')
             for stem in stems[:max_frames or None]:
                 for relative in (f'infrared/{stem}.jpg', f'visible_mis/{stem}.png',
                                  f'gt_h/{stem}.npy'):
