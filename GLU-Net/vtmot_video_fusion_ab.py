@@ -733,7 +733,7 @@ def run_train(args, device):
                          'flow_direction': 'current -> neighbour, per modality',
                          'occlusion': 'forward/backward difference <= 1.5 feature pixels',
                          'boundary': 'first/last neighbour invalid'},
-              'timing': 'per frame registration network+warp, B four-direction temporal Farneback, fused forward; disk IO and metric calculation excluded',
+              'timing': 'per frame registration network+warp, B forward/backward Farneback for two neighbours in each modality (eight calls on interior frames), fused forward; disk IO and metric calculation excluded',
               'A': results['A'], 'B': results['B'],
               'paired_spatial_improved_frames': sum(r['B_minus_A_spatial_loss'] < 0 for r in paired),
               'adopt_B': quality,
