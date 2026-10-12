@@ -1,0 +1,23 @@
+{
+  "verified": true,
+  "test_accessed": false,
+  "source": "roadscene_runs/vtmot_a1_fine_readonly_audit_independent/audit.json",
+  "protocol": "four locked VTMOT validation sequences; 800 frames; same GT-valid mask; final flow on 512x512 image-pixel grid",
+  "best_checkpoint_sha256": "af245ea28cd0fc33bff7aa9dd83cb1402c1108de7870c044a9960f791cbac435",
+  "source_coarse_checkpoint_sha256": "926f4e710c12c54c937d3e2dacb9ef36c8e08ca84e1a3639148b23f63c463fb7",
+  "selected_epoch": 17,
+  "optimizer_steps": 12920,
+  "all": {
+    "frames": 800,
+    "valid_pixels": 204309555,
+    "before_final_epe_512px": 5.884110189549444,
+    "after_final_epe_512px": 4.799317959760212,
+    "improved_frames": 675,
+    "regressed_frames": 125
+  },
+  "independent_inference": {
+    "frames": 800,
+    "final_flow_epe_512px": 4.799334160610762,
+    "maximum_frame_epe_difference_512px": 0.0032224655151367188
+  }
+}
