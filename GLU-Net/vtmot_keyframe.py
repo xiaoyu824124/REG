@@ -65,8 +65,21 @@ def load_a1(args, device):
             raise ValueError('adapted checkpoint VTMOT split hash mismatch')
         if payload.get('test_accessed') is not False:
             raise ValueError('adapted checkpoint does not document locked test split')
+    elif (payload.get('recipe') == 'vtmot_a1_fine_only_v1' and
+          payload.get('stage') == 'fine'):
+        checkpoint_recipe = 'vtmot_a1_fine_adapted'
+        if args.source_a1_checkpoint is None or args.source_coarse_adapt_checkpoint is None:
+            raise ValueError('fine checkpoint requires both source checkpoint paths')
+        if payload.get('source_a1_sha256') != sha256(args.source_a1_checkpoint):
+            raise ValueError('fine checkpoint source RoadScene A1 hash mismatch')
+        if payload.get('source_adapted_sha256') != sha256(args.source_coarse_adapt_checkpoint):
+            raise ValueError('fine checkpoint source VTMOT coarse hash mismatch')
+        if payload.get('split_sha256') != sha256(args.split_file):
+            raise ValueError('fine checkpoint VTMOT split hash mismatch')
+        if payload.get('test_accessed') is not False:
+            raise ValueError('fine checkpoint does not document locked test split')
     else:
-        raise ValueError('checkpoint is neither RoadScene A1 nor VTMOT coarse-adapted A1')
+        raise ValueError('checkpoint is not a supported A1 checkpoint')
     if payload.get('pretrained_sha256') != sha256(args.pretrained):
         raise ValueError('A1 and base pretrained weights do not match')
     if payload.get('coarse_sha256') != sha256(args.coarse_checkpoint):
@@ -74,8 +87,7 @@ def load_a1(args, device):
     model.load_state_dict(payload['model_state_dict'], strict=True)
     model.checkpoint_recipe = checkpoint_recipe
     model.adapted_validation_epe_512px = (payload.get('val_final_epe_512px')
-                                           if checkpoint_recipe == 'vtmot_a1_coarse_adapted'
-                                           else None)
+                                           if checkpoint_recipe != 'roadscene_a1' else None)
     model.eval()
     for parameter in model.parameters():
         parameter.requires_grad_(False)
@@ -128,6 +140,49 @@ def temporal_pair(previous, current):
     return {'vi': vi_cp, 'ir': ir_pc, 'vi_error': vi_error,
             'ir_error': ir_error, 'vi_bounds': vi_bounds,
             'ir_bounds': ir_bounds, 'ms': elapsed}
+
+
+def temporal_pair_fast(previous, current):
+    """Same four-direction confidence check on a 256 grid; return 512px XY."""
+    start = time.perf_counter()
+    size = (256, 256)
+    vi_p, vi_c, ir_p, ir_c = (
+        cv2.resize(gray(image), size, interpolation=cv2.INTER_AREA)
+        for image in (previous['vi'], current['vi'], previous['ir'], current['ir']))
+    def flow(first, second):
+        small = cv2.calcOpticalFlowFarneback(first, second, None, pyr_scale=.5,
+                                             levels=4, winsize=21, iterations=5,
+                                             poly_n=7, poly_sigma=1.5, flags=0)
+        return cv2.resize(small, (512, 512), interpolation=cv2.INTER_LINEAR) * 2.
+    vi_cp = flow(vi_c, vi_p)
+    vi_pc = flow(vi_p, vi_c)
+    ir_pc = flow(ir_p, ir_c)
+    ir_cp = flow(ir_c, ir_p)
+    vi_cycle, vi_bounds = sample(vi_pc, grid(vi_cp.shape[:2]) + vi_cp)
+    ir_cycle, ir_bounds = sample(ir_cp, grid(ir_pc.shape[:2]) + ir_pc)
+    vi_error = np.linalg.norm(vi_cp + vi_cycle, axis=-1)
+    ir_error = np.linalg.norm(ir_pc + ir_cycle, axis=-1)
+    return {'vi': vi_cp.astype(np.float32), 'ir': ir_pc.astype(np.float32),
+            'vi_error': vi_error, 'ir_error': ir_error,
+            'vi_bounds': vi_bounds, 'ir_bounds': ir_bounds,
+            'ms': 1000 * (time.perf_counter() - start)}
+
+
+def temporal_fast_self_test():
+    rng = np.random.default_rng(2026)
+    image = cv2.cvtColor(rng.integers(0, 256, (512, 512), dtype=np.uint8),
+                         cv2.COLOR_GRAY2RGB)
+    shifted = cv2.warpAffine(image, np.float32([[1, 0, 8], [0, 1, -6]]), (512, 512))
+    temporal = temporal_pair_fast({'vi': image, 'ir': image},
+                                  {'vi': shifted, 'ir': shifted})
+    core = np.s_[80:432, 80:432]
+    for name, expected in (('vi', [-8, 6]), ('ir', [8, -6])):
+        observed = np.median(temporal[name][core].reshape(-1, 2), axis=0)
+        if np.max(np.abs(observed - expected)) > 1.:
+            raise AssertionError(f'fast temporal {name} direction/scale: {observed}')
+    return {'direction_and_256_to_512_scale': 'passed',
+            'vi_current_to_previous_xy': [-8, 6],
+            'ir_previous_to_current_xy': [8, -6]}
 
 
 def temporal_self_test():
@@ -368,7 +423,7 @@ def save_ghost(image_vi, warped_ir, path):
     cv2.imwrite(str(path), cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR))
 
 
-def thresholds_from_training(args, dataset, model, device):
+def thresholds_from_training(args, dataset, model, device, temporal_fn=temporal_pair):
     samples = {'valid_fraction': [], 'fb_median_px': [], 'motion_median_px': []}
     for sequence, stems in dataset.sequences.items():
         positions = np.linspace(1, len(stems)-1,
@@ -378,7 +433,7 @@ def thresholds_from_training(args, dataset, model, device):
             prev = dataset.input_frame(sequence, stems[index-1])
             curr = dataset.input_frame(sequence, stems[index])
             prior, valid, _ = predict_a1(model, prev, device)
-            temporal = temporal_pair(prev, curr)
+            temporal = temporal_fn(prev, curr)
             quality = temporal_quality(temporal, prior, valid,
                                        args.fb_pixel_threshold)
             for key in samples:
@@ -413,6 +468,8 @@ def run_method(args, dataset, model, device, method, config=None):
     rows = []
     worst = []
     first_switches = []
+    focus_worst = []
+    focus_switches = []
     for sequence, stems in dataset.sequences.items():
         previous = previous_flow = previous_valid = previous_registered = None
         since_keyframe = 0
@@ -428,7 +485,8 @@ def run_method(args, dataset, model, device, method, config=None):
                 reason = 'every_frame'
                 timing = 0.
             else:
-                temporal = temporal_pair(previous, frame)
+                temporal = (temporal_pair_fast if method == 'fixed_fast' else temporal_pair)(
+                    previous, frame)
                 quality = temporal_quality(temporal, previous_flow, previous_valid,
                                            config['fb_pixel_threshold'])
                 timing = temporal['ms']
@@ -436,7 +494,7 @@ def run_method(args, dataset, model, device, method, config=None):
                     reason = 'low_temporal_coverage'
                 elif quality['fb_median_px'] > config['maximum_fb_median_px']:
                     reason = 'forward_backward_error'
-                elif method == 'fixed' and since_keyframe >= config['fixed_interval'] - 1:
+                elif method in ('fixed', 'fixed_fast') and since_keyframe >= config['fixed_interval'] - 1:
                     reason = 'fixed_interval'
                 elif method in ('adaptive', 'transition'):
                     reason = trigger_reason(quality, config, since_keyframe)
@@ -490,12 +548,20 @@ def run_method(args, dataset, model, device, method, config=None):
             worst = sorted(worst, key=lambda x: -x[0])[:3]
             if is_keyframe and index > 0 and len(first_switches) < 3:
                 first_switches.append(visual)
+            if sequence == 'photo-0319-18':
+                focus_worst.append(visual)
+                focus_worst = sorted(focus_worst, key=lambda x: -x[0])[:3]
+                if is_keyframe and index > 0:
+                    focus_switches.append(visual)
+                    focus_switches = sorted(focus_switches, key=lambda x: -x[0])[:3]
             previous, previous_flow, previous_valid = frame, state_flow, state_valid
             previous_registered = registered
         print(f'{method}: {sequence}, {len(stems)} frames, '
               f'EPE={np.mean([r["epe_512px"] for r in rows if r["sequence"] == sequence]):.3f}',
               flush=True)
-    for label, collection in (('worst', worst), ('switch', first_switches)):
+    for label, collection in (('worst', worst), ('switch', first_switches),
+                              ('photo031918_worst', focus_worst),
+                              ('photo031918_switch', focus_switches)):
         for _, sequence, stem, vi, warped in collection:
             save_ghost(vi, warped, args.output / method / 'ghosts' /
                        f'{label}_{sequence}_{stem}.png')
@@ -503,7 +569,8 @@ def run_method(args, dataset, model, device, method, config=None):
 
 
 def load_config(args):
-    path = args.output / 'train_thresholds.json'
+    path = args.output / ('train_thresholds_fast.json' if args.stage == 'compare_fast'
+                          else 'train_thresholds.json')
     if not path.is_file():
         raise FileNotFoundError(f'run --stage calibrate first: {path}')
     payload = json.loads(path.read_text(encoding='utf-8'))
@@ -529,7 +596,8 @@ def require_baseline(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--stage', required=True,
-                        choices=('check', 'baseline', 'calibrate', 'compare', 'transition'))
+                        choices=('check', 'baseline', 'calibrate', 'compare',
+                                 'calibrate_fast', 'compare_fast', 'transition'))
     parser.add_argument('--data-root', required=True, type=Path)
     parser.add_argument('--split-file', required=True, type=Path)
     parser.add_argument('--pretrained', required=True, type=Path)
@@ -537,6 +605,8 @@ def main():
     parser.add_argument('--a1-checkpoint', required=True, type=Path)
     parser.add_argument('--source-a1-checkpoint', type=Path,
                         help='RoadScene A1 source checkpoint when --a1-checkpoint is VTMOT-adapted')
+    parser.add_argument('--source-coarse-adapt-checkpoint', type=Path,
+                        help='VTMOT coarse-adapted A1 source of the fine checkpoint')
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--max-sequences', type=int, default=0)
     parser.add_argument('--max-frames', type=int, default=0)
@@ -549,11 +619,12 @@ def main():
     if min(args.calibration_pairs_per_sequence, args.fixed_interval,
            args.adaptive_max_interval) < 1:
         parser.error('intervals and calibration count must be positive')
-    if args.stage in ('compare', 'transition', 'calibrate'):
+    if args.stage in ('compare', 'transition', 'calibrate',
+                      'calibrate_fast', 'compare_fast'):
         require_baseline(args)
-    if args.stage == 'calibrate' and (args.max_sequences or args.max_frames):
+    if args.stage in ('calibrate', 'calibrate_fast') and (args.max_sequences or args.max_frames):
         parser.error('formal calibration must sample every train sequence; leave subset limits at zero')
-    split = 'train' if args.stage == 'calibrate' else 'eval'
+    split = 'train' if args.stage in ('calibrate', 'calibrate_fast') else 'eval'
     dataset = VTMOTVideos(args.data_root, args.split_file, split=split,
                           max_sequences=args.max_sequences, max_frames=args.max_frames)
     if args.stage == 'check':
@@ -561,6 +632,7 @@ def main():
                   direction_check(dataset, next(iter(dataset.sequences)),
                                   next(iter(dataset.sequences.values()))[0]),
                   'temporal_direction': temporal_self_test(),
+                  'fast_temporal_direction': temporal_fast_self_test(),
                   'sequences': list(dataset.sequences), 'frames':
                   sum(map(len, dataset.sequences.values())), 'test_accessed': False}
         print(json.dumps(checks, indent=2))
@@ -569,18 +641,22 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     install_mutual_guard()
     model = load_a1(args, device)
-    if args.stage == 'calibrate':
-        path = args.output / 'train_thresholds.json'
+    if args.stage in ('calibrate', 'calibrate_fast'):
+        fast = args.stage == 'calibrate_fast'
+        path = args.output / ('train_thresholds_fast.json' if fast else 'train_thresholds.json')
         if path.exists():
             raise FileExistsError(f'train thresholds already locked: {path}')
-        config = thresholds_from_training(args, dataset, model, device)
+        config = thresholds_from_training(args, dataset, model, device,
+                                          temporal_pair_fast if fast else temporal_pair)
         save_json(path, {'a1_sha256': sha256(args.a1_checkpoint),
                          'pretrained_sha256': sha256(args.pretrained),
-                         'split': 'train', 'thresholds': config})
+                         'split': 'train', 'temporal_grid': 256 if fast else 512,
+                         'thresholds': config})
         print(json.dumps(config, indent=2))
         return
     config = load_config(args) if args.stage != 'baseline' else None
     methods = {'baseline': ('baseline',), 'compare': ('fixed', 'adaptive'),
+               'compare_fast': ('fixed_fast',),
                'transition': ('transition',)}[args.stage]
     # Compile CUDA correlation kernels before timing any method. The warm-up
     # uses the same first validation frame and is excluded from per-frame cost.
@@ -602,7 +678,9 @@ def main():
                   'preprocess': 'common center crop plus bilinear resize to 512x512',
                   'direction': 'current visible_mis target -> current infrared source; XY',
                   'gt_mask': 'mapped GT source inside 512x512; identical for all methods',
-                  'timing': 'A1 GPU synchronized; temporal 4x Farneback; per-frame compute, I/O and metrics excluded',
+                  'timing': ('A1 GPU synchronized; temporal 4x Farneback at '
+                             f'{256 if method == "fixed_fast" else 512} grid; '
+                             'per-frame compute, I/O and metrics excluded'),
                   'a1_parameters': sum(p.numel() for p in model.parameters()),
                   'subset_limits': {'max_sequences': args.max_sequences,
                                     'max_frames': args.max_frames},
@@ -619,6 +697,11 @@ def main():
         if method in ('fixed', 'adaptive'):
             report['paired_vs_baseline'] = paired_report(
                 rows, args.output / 'baseline' / 'per_frame.csv', out, 'baseline')
+        elif method == 'fixed_fast':
+            reference = args.output / 'fixed' / 'per_frame.csv'
+            if not reference.is_file():
+                raise FileNotFoundError('run --stage compare before compare_fast')
+            report['paired_vs_fixed'] = paired_report(rows, reference, out, 'fixed')
         elif method == 'transition':
             reference = args.output / 'adaptive' / 'per_frame.csv'
             if not reference.is_file():
@@ -629,6 +712,34 @@ def main():
         print(json.dumps({'method': method, 'summary':
                           {k: v for k, v in report['summary'].items()
                            if k != 'per_sequence'}}, indent=2))
+    if args.stage == 'compare_fast':
+        baseline = json.loads((args.output / 'baseline' / 'report.json').read_text(
+            encoding='utf-8'))['summary']
+        old = json.loads((args.output / 'fixed' / 'report.json').read_text(
+            encoding='utf-8'))['summary']
+        fast = summarise(evaluated['fixed_fast'])['all']
+        focus = 'photo-0319-18'
+        rules = {'maximum_epe_increase_vs_old_512px': .1,
+                 'maximum_epe_increase_vs_per_frame_512px': .5,
+                 'minimum_compute_reduction_vs_old_fraction': .2,
+                 'maximum_photo031918_epe_increase_512px': .5}
+        decision = {
+            'rule_fixed_before_fast_validation': rules,
+            'old_fixed_epe_512px': old['pixel_weighted_epe_512px'],
+            'fast_fixed_epe_512px': fast['pixel_weighted_epe_512px'],
+            'per_frame_epe_512px': baseline['pixel_weighted_epe_512px'],
+            'old_fixed_total_compute_seconds': old['total_compute_seconds'],
+            'fast_fixed_total_compute_seconds': fast['total_compute_seconds'],
+            'old_fixed_photo031918_frame_mean_epe_512px': old['per_sequence'][focus]['epe_512px'],
+            'fast_fixed_photo031918_frame_mean_epe_512px': fast['per_sequence'][focus]['epe_512px']}
+        decision['retain_fast_propagation'] = (
+            fast['pixel_weighted_epe_512px'] <= old['pixel_weighted_epe_512px'] + .1
+            and fast['pixel_weighted_epe_512px'] <= baseline['pixel_weighted_epe_512px'] + .5
+            and fast['total_compute_seconds'] <= old['total_compute_seconds'] * .8
+            and fast['per_sequence'][focus]['epe_512px'] <=
+            old['per_sequence'][focus]['epe_512px'] + .5)
+        save_json(args.output / 'fast_decision.json', decision)
+        print(json.dumps(decision, indent=2))
     if args.stage == 'compare':
         paired = paired_report(evaluated['adaptive'],
                                args.output / 'fixed' / 'per_frame.csv',
