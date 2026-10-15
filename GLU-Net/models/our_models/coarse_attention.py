@@ -26,7 +26,7 @@ class CoarseSelfCrossAttention(nn.Module):
         )
         self.gate = nn.Parameter(torch.zeros(()))
 
-    def forward(self, target, source):
+    def forward(self, target, source, after_self=None):
         if target.shape != source.shape:
             raise ValueError("coarse target and source features must have equal shapes")
         batch, channels, height, width = target.shape
@@ -41,6 +41,16 @@ class CoarseSelfCrossAttention(nn.Module):
 
         target_self = self_step(target_tokens)
         source_self = self_step(source_tokens)
+        if after_self is not None:
+            # DNS position ablation: insert the *same* shared DNS module after
+            # both self-attention residuals, before either cross-attention.
+            pair = after_self(
+                target_self.transpose(1, 2).reshape(batch, channels, height, width),
+                source_self.transpose(1, 2).reshape(batch, channels, height, width))
+            if len(pair) != 2 or pair[0].shape != target.shape or pair[1].shape != source.shape:
+                raise ValueError('post-SA structural module changed feature shape')
+            target_self = pair[0].flatten(2).transpose(1, 2)
+            source_self = pair[1].flatten(2).transpose(1, 2)
         target_query = self.cross_norm(target_self)
         source_query = self.cross_norm(source_self)
         target_update, _ = self.cross_attention(target_query, source_query,

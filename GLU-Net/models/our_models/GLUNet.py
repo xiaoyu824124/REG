@@ -30,7 +30,7 @@ class GLUNet_model(nn.Module):
                  consensus_network=False, cyclic_consistency=True, decoder_inputs='corr_flow_feat',
                  coarse_attention=False, backbone_pretrained=True, coarse_dns=False,
                  coarse_mind=None, coarse_phase=False, local_dcn_steps=0,
-                 local_dcn64=False):
+                 local_dcn64=False, coarse_dns_order='before_sa'):
         """
         input: md --- maximum displacement (for correlation. default: 4), after warpping
 
@@ -46,6 +46,11 @@ class GLUNet_model(nn.Module):
             if coarse_attention else None)
         self.coarse_dns = (CoarseDNS(channels=512 if pyramid_type == 'VGG' else 1024)
                            if coarse_dns else None)
+        if coarse_dns_order not in ('before_sa', 'between_sa_ca', 'after_ca'):
+            raise ValueError('Unknown coarse DNS position')
+        if coarse_dns and not coarse_attention and coarse_dns_order != 'before_sa':
+            raise ValueError('DNS after SA/CA requires coarse attention')
+        self.coarse_dns_order = coarse_dns_order
         if coarse_dns and coarse_mind:
             raise ValueError('MIND and DNS must be evaluated separately')
         if coarse_phase and (coarse_mind or coarse_dns):
@@ -359,10 +364,15 @@ class GLUNet_model(nn.Module):
         ratio_x = 16.0 / float(w_256)
         ratio_y = 16.0 / float(h_256)
         b = c24.shape[0]
-        if self.coarse_dns is not None:
+        if self.coarse_dns is not None and self.coarse_dns_order == 'before_sa':
             c14, c24 = self.coarse_dns(c14, c24)
         if self.coarse_attention is not None:
-            c14, c24 = self.coarse_attention(c14, c24)
+            c14, c24 = self.coarse_attention(
+                c14, c24,
+                after_self=(self.coarse_dns if self.coarse_dns is not None and
+                            self.coarse_dns_order == 'between_sa_ca' else None))
+        if self.coarse_dns is not None and self.coarse_dns_order == 'after_ca':
+            c14, c24 = self.coarse_dns(c14, c24)
         if self.cyclic_consistency:
             corr4d = self.corr(self.l2norm(c24), self.l2norm(c14))  # first source, then target
             # run match processing model
