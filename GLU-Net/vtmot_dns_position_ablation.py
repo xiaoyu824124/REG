@@ -16,6 +16,8 @@ Optional --gpu-epoch-cache stages the current training stride phase on CUDA
 before each epoch. It changes only data transport. The --stage cache-check
 verifies all cached inputs, shuffle order, augmented batch, model output and
 loss against the original streaming path before enabling this option.
+The --stage all runner completes S/A/B/C coarse training before S/A/B/C fine
+training, always loading each arm's own selected coarse checkpoint.
 """
 
 from __future__ import annotations
@@ -796,16 +798,13 @@ def main():
             print('CUDA epoch cache exact-value check passed', flush=True)
             gc.collect()
             torch.cuda.empty_cache()
-        for arm in ORDERS:
-            print(f'=== {arm}: coarse then fine ===', flush=True)
-            train_stage(args, arm, 'coarse', train_videos, val_videos, device)
-            gc.collect()
-            if device.type == 'cuda':
-                torch.cuda.empty_cache()
-            train_stage(args, arm, 'fine', train_videos, val_videos, device)
-            gc.collect()
-            if device.type == 'cuda':
-                torch.cuda.empty_cache()
+        for stage in STAGES:
+            for arm in ORDERS:
+                print(f'=== {arm}: {stage} ===', flush=True)
+                train_stage(args, arm, stage, train_videos, val_videos, device)
+                gc.collect()
+                if device.type == 'cuda':
+                    torch.cuda.empty_cache()
         result = final_report(args)
         print(json.dumps({'final_epe_512px': result['final_epe_512px'],
                           'test_accessed': False}, indent=2), flush=True)
