@@ -516,12 +516,6 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
         parent_sha = sha256_file(args.output / arm / 'best_coarse.pth')
     if args.gpu_epoch_cache and device.type != 'cuda':
         raise RuntimeError('--gpu-epoch-cache requires CUDA')
-    gpu_label = (f'{torch.cuda.get_device_name()}, '
-                 f'allocated_mib={torch.cuda.memory_allocated()/1024**2:.0f}'
-                 if device.type == 'cuda' else 'none')
-    print(f'{arm} {stage} runtime: device={device}, gpu={gpu_label}, '
-          f'data_workers={args.data_workers}, '
-          f'gpu_epoch_cache={args.gpu_epoch_cache}', flush=True)
     active = active_parameters(model, stage)
     locked = frozen_digest(model)
     optimizer = torch.optim.AdamW(active, lr=LR[stage])
@@ -539,18 +533,9 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
         if args.gpu_epoch_cache:
             phase_frames = Frames(train_videos,
                                   phase=(epoch-1) % TRAIN_FRAME_STRIDE)
-            print(f'{arm} {stage} epoch {epoch}: loading '
-                  f'{len(phase_frames)} train images into CUDA cache '
-                  '(GT/masks stay on host)',
-                  flush=True)
             cached_frames, cache_stats = build_gpu_epoch_cache(
                 phase_frames, device, num_workers=args.data_workers,
                 reserve_gib=args.gpu_cache_reserve_gib)
-            print(f'{arm} {stage} epoch {epoch}: CUDA image cache ready, '
-                  f'{cache_stats["gib"]:.2f} GiB, '
-                  f'{cache_stats["load_seconds"]:.1f}s, '
-                  f'allocated={cache_stats["gpu_allocated_mib_after_load"]:.0f} MiB',
-                  flush=True)
             update = train_epoch(model, optimizer, train_videos, device, epoch,
                                  cached_frames=cached_frames)
             if update['image_order_sha256'] != expected_order_sha256(
@@ -585,14 +570,10 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
             checkpoint(result_path, args, model, optimizer, scheduler,
                        arm, stage, epoch, steps, best, history)
         save_json(directory / f'history_{stage}.json', history)
-        cache_text = (f', cache={cache_stats["load_seconds"]:.1f}s'
-                      if cache_stats else '')
         print(f'{arm} {stage} {epoch}/{EPOCHS[stage]}: '
               f'val final={score:.4f}, best={best:.4f}@{best_epoch}, '
               f'coarse={validation_summary["all"]["stage_epe_512px"]["coarse16"]:.4f}, '
-              f'gates={gates(model)}, steps={steps}, '
-              f'train={train_seconds:.1f}s{cache_text}, '
-              f'val={validation_seconds:.1f}s',
+              f'gates={gates(model)}, steps={steps}',
               flush=True)
     selected = torch.load(result_path, map_location='cpu', weights_only=False)
     model.load_state_dict(selected['model_state_dict'], strict=True)
@@ -796,15 +777,12 @@ def main():
                 'all-stage run needs a fresh output directory; existing '
                 f'checkpoint: {existing[0]}')
         if args.gpu_epoch_cache:
-            print('=== Checking CUDA epoch cache before S ===', flush=True)
             cache_check = check_gpu_epoch_cache(args, train_videos, device)
             save_json(args.output / 'gpu_cache_check.json', cache_check)
-            print('CUDA epoch cache exact-value check passed', flush=True)
             gc.collect()
             torch.cuda.empty_cache()
         for stage in STAGES:
             for arm in ORDERS:
-                print(f'=== {arm}: {stage} ===', flush=True)
                 train_stage(args, arm, stage, train_videos, val_videos, device)
                 gc.collect()
                 if device.type == 'cuda':
