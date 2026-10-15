@@ -12,8 +12,9 @@ batch 2, hierarchical Charbonnier loss, AdamW, cosine schedule, and exactly
 selects the best checkpoint but does not shorten any arm's step budget.
 The test split is never instantiated.
 
-Optional --gpu-epoch-cache stages the current training stride phase on CUDA
-before each epoch. It changes only data transport. The --stage cache-check
+Optional --gpu-epoch-cache stages decoded training images on CUDA before each
+epoch while keeping GT flow and masks on the host. It changes only data
+transport. The --stage cache-check
 verifies all cached inputs, shuffle order, augmented batch, model output and
 loss against the original streaming path before enabling this option.
 The --stage all runner completes S/A/B/C coarse training before S/A/B/C fine
@@ -291,12 +292,13 @@ def check_gpu_epoch_cache(args, train_videos, device):
     if cpu_batch['name'] != gpu_batch['name']:
         raise AssertionError('first cached batch has different image pairs')
     for key in FIELDS:
-        if not torch.equal(cpu_batch[key].to(device), gpu_batch[key]):
+        if not torch.equal(cpu_batch[key].to(gpu_batch[key].device),
+                           gpu_batch[key]):
             raise AssertionError(f'first cached batch changed {key}')
     cpu_augmented = augment(cpu_batch, 1, enabled=True)
     gpu_augmented = augment(gpu_batch, 1, enabled=True)
     for key in FIELDS:
-        if not torch.equal(cpu_augmented[key].to(device),
+        if not torch.equal(cpu_augmented[key].to(gpu_augmented[key].device),
                            gpu_augmented[key]):
             raise AssertionError(f'GPU cache changed augmented {key}')
     with torch.inference_mode():
@@ -538,12 +540,13 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
             phase_frames = Frames(train_videos,
                                   phase=(epoch-1) % TRAIN_FRAME_STRIDE)
             print(f'{arm} {stage} epoch {epoch}: loading '
-                  f'{len(phase_frames)} train frames into CUDA cache',
+                  f'{len(phase_frames)} train images into CUDA cache '
+                  '(GT/masks stay on host)',
                   flush=True)
             cached_frames, cache_stats = build_gpu_epoch_cache(
                 phase_frames, device, num_workers=args.data_workers,
                 reserve_gib=args.gpu_cache_reserve_gib)
-            print(f'{arm} {stage} epoch {epoch}: CUDA cache ready, '
+            print(f'{arm} {stage} epoch {epoch}: CUDA image cache ready, '
                   f'{cache_stats["gib"]:.2f} GiB, '
                   f'{cache_stats["load_seconds"]:.1f}s, '
                   f'allocated={cache_stats["gpu_allocated_mib_after_load"]:.0f} MiB',
@@ -738,7 +741,8 @@ def main():
                         help='Parallel CPU workers for deterministic frame loading; '
                              '0 preserves the original loader')
     parser.add_argument('--gpu-epoch-cache', action='store_true',
-                        help='Stage one training stride phase on CUDA each epoch')
+                        help='Stage decoded images on CUDA for each train epoch; '
+                             'GT flow and masks stay on the host')
     parser.add_argument('--gpu-cache-reserve-gib', type=float, default=4.0,
                         help='Free VRAM required after the epoch cache is allocated')
     args = parser.parse_args()

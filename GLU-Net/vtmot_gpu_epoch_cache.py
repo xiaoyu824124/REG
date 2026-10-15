@@ -1,8 +1,9 @@
 """Optional, exact-value GPU cache for one VTMOT training stride phase.
 
-Images are still decoded and GT is still built on the CPU. This module moves
-the already prepared tensors for *one* epoch onto the GPU before training and
-releases them before validation. It never changes the dataset or GT mask.
+Images are still decoded and GT is still built on the CPU. The decoded image
+tensors for *one* epoch are kept on the GPU; GT flow and validity masks remain
+in host memory to leave room for model activations and gradients. The cache is
+released before validation. It never changes the dataset or GT mask.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from torch.utils.data import DataLoader, Dataset
 
 FIELDS = ('source_image', 'target_image', 'flow_map',
           'correspondence_mask')
+GPU_FIELDS = ('source_image', 'target_image')
 
 
 class GpuEpochFrames(Dataset):
@@ -49,7 +51,10 @@ def build_gpu_epoch_cache(frames, device, num_workers=0, verify=False,
     first = next(iterator)
     length = len(frames)
     bytes_needed = sum(length * first[key][0].numel() *
-                       first[key].element_size() for key in FIELDS)
+                       first[key].element_size() for key in GPU_FIELDS)
+    host_bytes = sum(length * first[key][0].numel() *
+                     first[key].element_size() for key in FIELDS
+                     if key not in GPU_FIELDS)
     torch.cuda.empty_cache()
     cuda_index = (device.index if device.index is not None else
                   torch.cuda.current_device())
@@ -57,12 +62,13 @@ def build_gpu_epoch_cache(frames, device, num_workers=0, verify=False,
     reserve = int(reserve_gib * (1024 ** 3))
     if free - bytes_needed < reserve:
         raise MemoryError(
-            f'GPU epoch cache needs {bytes_needed/1024**3:.2f} GiB plus '
+            f'GPU image cache needs {bytes_needed/1024**3:.2f} GiB plus '
             f'{reserve_gib:.1f} GiB reserve, but free VRAM is '
             f'{free/1024**3:.2f} of {total/1024**3:.2f} GiB; '
             'use streaming mode instead')
     tensors = {key: torch.empty((length, *first[key].shape[1:]),
-                                dtype=first[key].dtype, device=device)
+                                dtype=first[key].dtype,
+                                device=device if key in GPU_FIELDS else 'cpu')
                for key in FIELDS}
     names = []
     offset = 0
@@ -72,14 +78,15 @@ def build_gpu_epoch_cache(frames, device, num_workers=0, verify=False,
         count = len(batch['name'])
         section = slice(offset, offset + count)
         for key in FIELDS:
-            tensors[key][section].copy_(batch[key], non_blocking=True)
+            tensors[key][section].copy_(batch[key],
+                                        non_blocking=key in GPU_FIELDS)
         # A worker may release/reuse its pinned source buffers as soon as this
         # batch leaves scope. Finish H2D copies before accepting another batch.
         torch.cuda.synchronize(device)
         if verify:
             for key in FIELDS:
                 if not torch.equal(tensors[key][section],
-                                   batch[key].to(device)):
+                                   batch[key].to(tensors[key].device)):
                     raise AssertionError(f'GPU cache changed {key} at {offset}')
         names.extend(batch['name'])
         offset += count
@@ -92,7 +99,8 @@ def build_gpu_epoch_cache(frames, device, num_workers=0, verify=False,
         raise AssertionError('GPU cache has incomplete frame count')
     elapsed = time.perf_counter() - start
     return GpuEpochFrames(tensors, names), {
-        'frames': length, 'bytes': bytes_needed,
+        'frames': length, 'mode': 'images_gpu_gt_host',
+        'bytes': bytes_needed, 'host_bytes': host_bytes,
         'gib': bytes_needed / 1024 ** 3,
         'load_seconds': elapsed,
         'device_name': torch.cuda.get_device_name(cuda_index),
