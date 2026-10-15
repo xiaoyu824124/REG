@@ -299,19 +299,25 @@ def load_best_coarse(args, arm, device):
     return model, payload
 
 
-def validation(model, videos, device):
-    rows, summary = evaluate_vtmot(model, videos, device)
+def validation(model, videos, device, num_workers=0):
+    rows, summary = evaluate_vtmot(model, videos, device,
+                                   num_workers=num_workers)
     if len(rows) != EXPECTED_VALID_FRAMES:
         raise AssertionError('validation must cover four complete sequences')
     return rows, summary, summary['all']['stage_epe_512px']['final512']
 
 
 @torch.inference_mode()
-def correlation_diagnostics(model, videos, device):
+def correlation_diagnostics(model, videos, device, num_workers=0):
     """Read-only selected-coarse CE/Top-1 under original 16-grid convention."""
     rows = []
     model.eval()
-    for batch in DataLoader(Frames(videos), batch_size=1, shuffle=False):
+    options = {'num_workers': num_workers,
+               'pin_memory': device.type == 'cuda'}
+    if num_workers:
+        options['prefetch_factor'] = 2
+    for batch in DataLoader(Frames(videos), batch_size=1, shuffle=False,
+                            **options):
         source, target, _, _, truth, valid, _ = prepare(batch, device)
         target_features = model.base.pyramid(target)[-3]
         source_features = model.base.pyramid(source)[-3]
@@ -347,14 +353,19 @@ def correlation_diagnostics(model, videos, device):
     return rows, summary
 
 
-def image_evaluation(model, videos, device):
+def image_evaluation(model, videos, device, num_workers=0):
     """Same full-res GT/mask for coarse16 and final512 registered images."""
     rows = []
     with frozen_inference(model):
         first = next(iter(Frames(videos)))
         model({key: value[None] if isinstance(value, torch.Tensor) else [value]
                for key, value in first.items()}, device)
-        for batch in DataLoader(Frames(videos), batch_size=1, shuffle=False):
+        options = {'num_workers': num_workers,
+                   'pin_memory': device.type == 'cuda'}
+        if num_workers:
+            options['prefetch_factor'] = 2
+        for batch in DataLoader(Frames(videos), batch_size=1, shuffle=False,
+                                **options):
             if device.type == 'cuda':
                 torch.cuda.synchronize(device)
             start = time.perf_counter()
@@ -444,22 +455,31 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
     optimizer = torch.optim.AdamW(active, lr=LR[stage])
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=EPOCHS[stage], eta_min=ETA_MIN[stage])
-    _, epoch_zero, best = validation(model, val_videos, device)
+    _, epoch_zero, best = validation(model, val_videos, device,
+                                     args.data_workers)
     best_epoch = steps = 0
     history = []
     checkpoint(result_path, args, model, optimizer, scheduler, arm, stage,
                0, steps, best, history)
     for epoch in range(1, EPOCHS[stage]+1):
-        update = train_epoch(model, optimizer, train_videos, device, epoch)
+        train_start = time.perf_counter()
+        update = train_epoch(model, optimizer, train_videos, device, epoch,
+                             num_workers=args.data_workers)
+        train_seconds = time.perf_counter()-train_start
         if update['steps'] != EXPECTED_TRAIN_FRAMES // TRAIN_FRAME_STRIDE // BATCH_SIZE:
             raise AssertionError('optimizer step count differs from fixed budget')
         steps += update['steps']
-        _, validation_summary, score = validation(model, val_videos, device)
+        validation_start = time.perf_counter()
+        _, validation_summary, score = validation(
+            model, val_videos, device, args.data_workers)
+        validation_seconds = time.perf_counter()-validation_start
         lr_used = optimizer.param_groups[0]['lr']
         scheduler.step()
         record = {'epoch': epoch, 'cumulative_steps': steps,
                   'train': update, 'validation': validation_summary,
-                  'lr_used': lr_used, 'gates': gates(model)}
+                  'lr_used': lr_used, 'gates': gates(model),
+                  'train_wall_seconds': train_seconds,
+                  'validation_wall_seconds': validation_seconds}
         history.append(record)
         if frozen_digest(model) != locked:
             raise AssertionError(f'{arm} {stage}: frozen parameters/BN changed')
@@ -471,10 +491,13 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
         print(f'{arm} {stage} {epoch}/{EPOCHS[stage]}: '
               f'val final={score:.4f}, best={best:.4f}@{best_epoch}, '
               f'coarse={validation_summary["all"]["stage_epe_512px"]["coarse16"]:.4f}, '
-              f'gates={gates(model)}, steps={steps}', flush=True)
+              f'gates={gates(model)}, steps={steps}, '
+              f'train={train_seconds:.1f}s, val={validation_seconds:.1f}s',
+              flush=True)
     selected = torch.load(result_path, map_location='cpu', weights_only=False)
     model.load_state_dict(selected['model_state_dict'], strict=True)
-    image_rows = image_evaluation(model, val_videos, device)
+    image_rows = image_evaluation(model, val_videos, device,
+                                  args.data_workers)
     image_summary = metric_summary(image_rows)
     save_csv(directory / f'per_frame_best_{stage}.csv', image_rows)
     report = {'recipe': 'vtmot_dns_position_v1', 'arm': arm,
@@ -497,6 +520,7 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
               'loss': 'L_final + 0.1 L_32 + 0.2 L_64, masked Charbonnier',
               'max_epochs': EPOCHS[stage], 'batch_size': BATCH_SIZE,
               'seed': SEED, 'train_frame_stride': TRAIN_FRAME_STRIDE,
+              'data_workers': args.data_workers,
               'optimizer': 'AdamW', 'learning_rate': LR[stage],
               'scheduler': 'CosineAnnealingLR',
               'training_stability': {
@@ -512,7 +536,7 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
     if stage == 'coarse':
         with frozen_inference(model):
             corr_rows, corr_summary = correlation_diagnostics(
-                model, val_videos, device)
+                model, val_videos, device, args.data_workers)
         save_csv(directory / 'coarse_correlation_per_frame.csv', corr_rows)
         report['correlation'] = corr_summary
     save_json(directory / f'report_{stage}.json', report)
@@ -611,7 +635,12 @@ def main():
     parser.add_argument('--attention-checkpoint', type=Path)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--full-forward-check', action='store_true')
+    parser.add_argument('--data-workers', type=int, default=0,
+                        help='Parallel CPU workers for deterministic frame loading; '
+                             '0 preserves the original loader')
     args = parser.parse_args()
+    if args.data_workers < 0:
+        parser.error('--data-workers must be nonnegative')
     math_check = check_order_math()
     if args.stage == 'check' and not all((args.pretrained, args.attention_checkpoint)):
         print(json.dumps({'order_math': math_check, 'test_accessed': False}, indent=2))

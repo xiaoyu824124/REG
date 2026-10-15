@@ -132,17 +132,24 @@ def frozen_digest(model):
     return digest.hexdigest()
 
 
-def loader(dataset, epoch):
+def loader(dataset, epoch, num_workers=0):
+    if num_workers < 0:
+        raise ValueError('num_workers must be nonnegative')
+    options = {'num_workers': num_workers,
+               'pin_memory': torch.cuda.is_available()}
+    if num_workers:
+        options['prefetch_factor'] = 2
     return DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True,
                       generator=torch.Generator().manual_seed(SEED + epoch),
-                      num_workers=0, pin_memory=torch.cuda.is_available())
+                      **options)
 
 
-def train_epoch(model, optimizer, train_videos, device, epoch, check=False):
+def train_epoch(model, optimizer, train_videos, device, epoch, check=False,
+                num_workers=0):
     model.train()
     phase = (epoch - 1) % TRAIN_FRAME_STRIDE
     frames = Frames(train_videos, phase=None if check else phase)
-    data = loader(frames, epoch)
+    data = loader(frames, epoch, num_workers=num_workers)
     totals = {'loss': 0., 'local32': 0., 'local64': 0., 'final512': 0.}
     count, steps, grad_max = 0, 0, 0.
     order = hashlib.sha256()
@@ -195,10 +202,15 @@ def frozen_inference(model):
         model.train(training)
 
 
-def evaluate_vtmot(model, videos, device, frame_limit=0):
+def evaluate_vtmot(model, videos, device, frame_limit=0, num_workers=0):
     rows = []
     with frozen_inference(model):
-        for batch in DataLoader(Frames(videos), batch_size=1, shuffle=False, num_workers=0):
+        options = {'num_workers': num_workers,
+                   'pin_memory': torch.cuda.is_available()}
+        if num_workers:
+            options['prefetch_factor'] = 2
+        for batch in DataLoader(Frames(videos), batch_size=1,
+                                shuffle=False, **options):
             prediction = model(batch, device)
             truth = batch['flow_map'].to(device).float()
             valid = batch['correspondence_mask'].to(device).bool()
