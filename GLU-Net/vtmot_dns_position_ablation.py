@@ -11,12 +11,18 @@ batch 2, hierarchical Charbonnier loss, AdamW, cosine schedule, and exactly
 30 coarse plus 30 local epochs (760 optimizer steps per epoch). Validation
 selects the best checkpoint but does not shorten any arm's step budget.
 The test split is never instantiated.
+
+Optional --gpu-epoch-cache stages the current training stride phase on CUDA
+before each epoch. It changes only data transport. The --stage cache-check
+verifies all cached inputs, shuffle order, augmented batch, model output and
+loss against the original streaming path before enabling this option.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import gc
 import hashlib
 import json
 import os
@@ -35,14 +41,16 @@ from models.our_models.coarse_attention import CoarseSelfCrossAttention
 from models.our_models.coarse_dns import CoarseDNS
 from roadscene_coarse import (coarse_statistics, load_base_weights, prepare,
                               sha256_file)
-from roadscene_fusion_hierarchical import FineArm, objective
+from roadscene_fusion_hierarchical import FineArm, augment, objective
 from roadscene_no_dcn import LOCAL_NAMES, UP_NAMES, check_no_dcn
 from vtmot_a1_adapt import (BATCH_SIZE, Frames, LEARNING_RATE as COARSE_LR,
                             MAX_EPOCHS as COARSE_EPOCHS, SEED, TRAIN_FRAME_STRIDE,
                             evaluate_vtmot, frozen_digest, frozen_inference,
-                            save_json, seed_all, train_epoch)
+                            loader, save_json, seed_all, train_epoch)
 from vtmot_a1_fine_adapt import LEARNING_RATE as FINE_LR
 from vtmot_geometry import backward_warp
+from vtmot_gpu_epoch_cache import (FIELDS, build_gpu_epoch_cache,
+                                   expected_order_sha256)
 from vtmot_keyframe import edge_metrics, install_mutual_guard, lncc, nmi
 from vtmot_local_correction_ab import SPLIT_NAMES
 
@@ -260,6 +268,58 @@ def check_full_forward(args):
             'fine_coarse_gradient': 'zero'}
 
 
+def check_gpu_epoch_cache(args, train_videos, device):
+    """Verify every cached tensor, full shuffle order, and model output."""
+    if device.type != 'cuda':
+        raise RuntimeError('cache-check needs CUDA')
+    model = initialize(args.arm or 'S', args, device).eval()
+    frames = Frames(train_videos, phase=0)
+    cached, stats = build_gpu_epoch_cache(
+        frames, device, num_workers=args.data_workers, verify=True,
+        reserve_gib=args.gpu_cache_reserve_gib)
+    expected = expected_order_sha256(frames, 1, SEED, BATCH_SIZE)
+    digest = hashlib.sha256()
+    for batch in loader(cached, 1, num_workers=0):
+        for name in batch['name']:
+            digest.update((name + '\n').encode())
+    if digest.hexdigest() != expected:
+        raise AssertionError('GPU cache changed the full epoch sample order')
+    cpu_batch = next(iter(loader(frames, 1, num_workers=0)))
+    gpu_batch = next(iter(loader(cached, 1, num_workers=0)))
+    if cpu_batch['name'] != gpu_batch['name']:
+        raise AssertionError('first cached batch has different image pairs')
+    for key in FIELDS:
+        if not torch.equal(cpu_batch[key].to(device), gpu_batch[key]):
+            raise AssertionError(f'first cached batch changed {key}')
+    cpu_augmented = augment(cpu_batch, 1, enabled=True)
+    gpu_augmented = augment(gpu_batch, 1, enabled=True)
+    for key in FIELDS:
+        if not torch.equal(cpu_augmented[key].to(device),
+                           gpu_augmented[key]):
+            raise AssertionError(f'GPU cache changed augmented {key}')
+    with torch.inference_mode():
+        cpu_output = model(cpu_augmented, device)
+        gpu_output = model(gpu_augmented, device)
+        stage_differences = {stage: float((cpu_output[stage]-gpu_output[stage])
+                                          .abs().max())
+                             for stage in ('coarse16', 'local32', 'local64',
+                                           'final512')}
+        if any(value != 0. for value in stage_differences.values()):
+            raise AssertionError('GPU cache changed model output')
+        cpu_loss = objective(cpu_output, cpu_augmented, device,
+                             hierarchical=True)[0]
+        gpu_loss = objective(gpu_output, gpu_augmented, device,
+                             hierarchical=True)[0]
+        if not torch.equal(cpu_loss, gpu_loss):
+            raise AssertionError('GPU cache changed hierarchical loss')
+    return {'cache': stats, 'full_epoch_order_sha256': expected,
+            'first_batch_inputs_and_augmentation': 'exact',
+            'all_four_flow_outputs_max_abs_diff': stage_differences,
+            'hierarchical_loss_max_abs_diff': float((cpu_loss-gpu_loss).abs()),
+            'gpu_allocated_mib': torch.cuda.memory_allocated()/1024**2,
+            'test_accessed': False}
+
+
 def checkpoint(path, args, model, optimizer, scheduler, arm, stage, epoch,
                steps, best_score, history):
     payload = {
@@ -450,6 +510,14 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
     else:
         model, parent = load_best_coarse(args, arm, device)
         parent_sha = sha256_file(args.output / arm / 'best_coarse.pth')
+    if args.gpu_epoch_cache and device.type != 'cuda':
+        raise RuntimeError('--gpu-epoch-cache requires CUDA')
+    gpu_label = (f'{torch.cuda.get_device_name()}, '
+                 f'allocated_mib={torch.cuda.memory_allocated()/1024**2:.0f}'
+                 if device.type == 'cuda' else 'none')
+    print(f'{arm} {stage} runtime: device={device}, gpu={gpu_label}, '
+          f'data_workers={args.data_workers}, '
+          f'gpu_epoch_cache={args.gpu_epoch_cache}', flush=True)
     active = active_parameters(model, stage)
     locked = frozen_digest(model)
     optimizer = torch.optim.AdamW(active, lr=LR[stage])
@@ -463,8 +531,31 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
                0, steps, best, history)
     for epoch in range(1, EPOCHS[stage]+1):
         train_start = time.perf_counter()
-        update = train_epoch(model, optimizer, train_videos, device, epoch,
-                             num_workers=args.data_workers)
+        cache_stats = None
+        if args.gpu_epoch_cache:
+            phase_frames = Frames(train_videos,
+                                  phase=(epoch-1) % TRAIN_FRAME_STRIDE)
+            print(f'{arm} {stage} epoch {epoch}: loading '
+                  f'{len(phase_frames)} train frames into CUDA cache',
+                  flush=True)
+            cached_frames, cache_stats = build_gpu_epoch_cache(
+                phase_frames, device, num_workers=args.data_workers,
+                reserve_gib=args.gpu_cache_reserve_gib)
+            print(f'{arm} {stage} epoch {epoch}: CUDA cache ready, '
+                  f'{cache_stats["gib"]:.2f} GiB, '
+                  f'{cache_stats["load_seconds"]:.1f}s, '
+                  f'allocated={cache_stats["gpu_allocated_mib_after_load"]:.0f} MiB',
+                  flush=True)
+            update = train_epoch(model, optimizer, train_videos, device, epoch,
+                                 cached_frames=cached_frames)
+            if update['image_order_sha256'] != expected_order_sha256(
+                    phase_frames, epoch, SEED, BATCH_SIZE):
+                raise AssertionError('cached training changed sample order')
+            del cached_frames
+            torch.cuda.empty_cache()
+        else:
+            update = train_epoch(model, optimizer, train_videos, device, epoch,
+                                 num_workers=args.data_workers)
         train_seconds = time.perf_counter()-train_start
         if update['steps'] != EXPECTED_TRAIN_FRAMES // TRAIN_FRAME_STRIDE // BATCH_SIZE:
             raise AssertionError('optimizer step count differs from fixed budget')
@@ -479,7 +570,8 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
                   'train': update, 'validation': validation_summary,
                   'lr_used': lr_used, 'gates': gates(model),
                   'train_wall_seconds': train_seconds,
-                  'validation_wall_seconds': validation_seconds}
+                  'validation_wall_seconds': validation_seconds,
+                  'gpu_cache': cache_stats}
         history.append(record)
         if frozen_digest(model) != locked:
             raise AssertionError(f'{arm} {stage}: frozen parameters/BN changed')
@@ -488,11 +580,14 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
             checkpoint(result_path, args, model, optimizer, scheduler,
                        arm, stage, epoch, steps, best, history)
         save_json(directory / f'history_{stage}.json', history)
+        cache_text = (f', cache={cache_stats["load_seconds"]:.1f}s'
+                      if cache_stats else '')
         print(f'{arm} {stage} {epoch}/{EPOCHS[stage]}: '
               f'val final={score:.4f}, best={best:.4f}@{best_epoch}, '
               f'coarse={validation_summary["all"]["stage_epe_512px"]["coarse16"]:.4f}, '
               f'gates={gates(model)}, steps={steps}, '
-              f'train={train_seconds:.1f}s, val={validation_seconds:.1f}s',
+              f'train={train_seconds:.1f}s{cache_text}, '
+              f'val={validation_seconds:.1f}s',
               flush=True)
     selected = torch.load(result_path, map_location='cpu', weights_only=False)
     model.load_state_dict(selected['model_state_dict'], strict=True)
@@ -521,6 +616,7 @@ def train_stage(args, arm, stage, train_videos, val_videos, device):
               'max_epochs': EPOCHS[stage], 'batch_size': BATCH_SIZE,
               'seed': SEED, 'train_frame_stride': TRAIN_FRAME_STRIDE,
               'data_workers': args.data_workers,
+              'gpu_epoch_cache': args.gpu_epoch_cache,
               'optimizer': 'AdamW', 'learning_rate': LR[stage],
               'scheduler': 'CosineAnnealingLR',
               'training_stability': {
@@ -627,7 +723,8 @@ def final_report(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--stage', required=True,
-                        choices=('check', 'coarse', 'fine', 'report'))
+                        choices=('check', 'cache-check', 'coarse', 'fine',
+                                 'all', 'report'))
     parser.add_argument('--arm', choices=tuple(ORDERS))
     parser.add_argument('--data-root', type=Path)
     parser.add_argument('--split-file', type=Path)
@@ -638,9 +735,15 @@ def main():
     parser.add_argument('--data-workers', type=int, default=0,
                         help='Parallel CPU workers for deterministic frame loading; '
                              '0 preserves the original loader')
+    parser.add_argument('--gpu-epoch-cache', action='store_true',
+                        help='Stage one training stride phase on CUDA each epoch')
+    parser.add_argument('--gpu-cache-reserve-gib', type=float, default=4.0,
+                        help='Free VRAM required after the epoch cache is allocated')
     args = parser.parse_args()
     if args.data_workers < 0:
         parser.error('--data-workers must be nonnegative')
+    if args.gpu_cache_reserve_gib <= 0:
+        parser.error('--gpu-cache-reserve-gib must be positive')
     math_check = check_order_math()
     if args.stage == 'check' and not all((args.pretrained, args.attention_checkpoint)):
         print(json.dumps({'order_math': math_check, 'test_accessed': False}, indent=2))
@@ -660,8 +763,10 @@ def main():
         print(json.dumps({'final_epe_512px': result['final_epe_512px'],
                           'test_accessed': False}, indent=2))
         return
-    if args.arm is None or args.data_root is None:
-        parser.error('--arm and --data-root are required for training')
+    if args.stage in STAGES and args.arm is None:
+        parser.error('--arm is required for training')
+    if args.data_root is None:
+        parser.error('--data-root is required for training/cache-check')
     seed_all()
     install_mutual_guard()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -672,6 +777,39 @@ def main():
             tuple(val_videos.sequences) != SPLIT_NAMES or
             sum(map(len, val_videos.sequences.values())) != EXPECTED_VALID_FRAMES):
         raise ValueError('unexpected VTMOT train/validation manifest')
+    if args.stage == 'cache-check':
+        print(json.dumps(check_gpu_epoch_cache(args, train_videos, device),
+                         indent=2), flush=True)
+        return
+    if args.stage == 'all':
+        existing = [args.output / arm / f'best_{stage}.pth'
+                    for arm in ORDERS for stage in STAGES
+                    if (args.output / arm / f'best_{stage}.pth').exists()]
+        if existing:
+            raise FileExistsError(
+                'all-stage run needs a fresh output directory; existing '
+                f'checkpoint: {existing[0]}')
+        if args.gpu_epoch_cache:
+            print('=== Checking CUDA epoch cache before S ===', flush=True)
+            cache_check = check_gpu_epoch_cache(args, train_videos, device)
+            save_json(args.output / 'gpu_cache_check.json', cache_check)
+            print('CUDA epoch cache exact-value check passed', flush=True)
+            gc.collect()
+            torch.cuda.empty_cache()
+        for arm in ORDERS:
+            print(f'=== {arm}: coarse then fine ===', flush=True)
+            train_stage(args, arm, 'coarse', train_videos, val_videos, device)
+            gc.collect()
+            if device.type == 'cuda':
+                torch.cuda.empty_cache()
+            train_stage(args, arm, 'fine', train_videos, val_videos, device)
+            gc.collect()
+            if device.type == 'cuda':
+                torch.cuda.empty_cache()
+        result = final_report(args)
+        print(json.dumps({'final_epe_512px': result['final_epe_512px'],
+                          'test_accessed': False}, indent=2), flush=True)
+        return
     result = train_stage(args, args.arm, args.stage, train_videos, val_videos, device)
     print(json.dumps({'arm': args.arm, 'stage': args.stage,
                       'selected_epoch': result['selected_epoch'],

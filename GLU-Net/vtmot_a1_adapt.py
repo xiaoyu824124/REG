@@ -135,8 +135,11 @@ def frozen_digest(model):
 def loader(dataset, epoch, num_workers=0):
     if num_workers < 0:
         raise ValueError('num_workers must be nonnegative')
+    if num_workers and getattr(dataset, 'already_cuda', False):
+        raise ValueError('CUDA-cached frames must use num_workers=0')
     options = {'num_workers': num_workers,
-               'pin_memory': torch.cuda.is_available()}
+               'pin_memory': (torch.cuda.is_available() and
+                              not getattr(dataset, 'already_cuda', False))}
     if num_workers:
         options['prefetch_factor'] = 2
     return DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True,
@@ -145,10 +148,11 @@ def loader(dataset, epoch, num_workers=0):
 
 
 def train_epoch(model, optimizer, train_videos, device, epoch, check=False,
-                num_workers=0):
+                num_workers=0, cached_frames=None):
     model.train()
     phase = (epoch - 1) % TRAIN_FRAME_STRIDE
-    frames = Frames(train_videos, phase=None if check else phase)
+    frames = (cached_frames if cached_frames is not None else
+              Frames(train_videos, phase=None if check else phase))
     data = loader(frames, epoch, num_workers=num_workers)
     totals = {'loss': 0., 'local32': 0., 'local64': 0., 'final512': 0.}
     count, steps, grad_max = 0, 0, 0.
