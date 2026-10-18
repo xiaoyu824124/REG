@@ -15,7 +15,8 @@ from torch.nn import functional as F
 class CoarseDNS(nn.Module):
     """Compute [B,C,8,H,W] DNS, squeeze C, then project back to C channels."""
 
-    def __init__(self, channels=512, hidden=128, radii=(1, 2), eps=1e-6):
+    def __init__(self, channels=512, hidden=128, radii=(1, 2), eps=1e-6,
+                 adaptive_scale=False):
         super().__init__()
         self.channels = channels
         self.radii = tuple(radii)
@@ -23,6 +24,15 @@ class CoarseDNS(nn.Module):
         if not self.radii or any(radius < 1 for radius in self.radii):
             raise ValueError("DNS radii must be positive")
         self.channel_squeeze = nn.Linear(channels, 1)
+        self.adaptive_scale = adaptive_scale
+        if adaptive_scale:
+            # Predict one weight per location and radius after squeezing C.
+            # A zero logit head gives R * softmax(0) == 1 for every radius,
+            # preserving a previously trained DNS projection and gate.
+            self.scale_predictor = nn.Conv2d(4 * len(self.radii),
+                                             len(self.radii), kernel_size=1)
+            nn.init.zeros_(self.scale_predictor.weight)
+            nn.init.zeros_(self.scale_predictor.bias)
         self.projection = nn.Sequential(
             nn.Conv2d(4 * len(self.radii), hidden, kernel_size=3, padding=1),
             nn.LeakyReLU(0.1, inplace=True),
@@ -59,10 +69,27 @@ class CoarseDNS(nn.Module):
             descriptors.append(torch.exp(-distances / noise))
         return torch.cat(descriptors, dim=2)
 
-    def forward_one(self, features):
+    def squeezed_descriptor(self, features):
         descriptor = self.descriptor(features)  # [B,C,P,H,W]
-        squeezed = self.channel_squeeze(
+        return self.channel_squeeze(
             descriptor.permute(0, 2, 3, 4, 1)).squeeze(-1)  # [B,P,H,W]
+
+    def scale_weight_map(self, squeezed):
+        """Return R*softmax(logits) at each location; B0 returns unit weights."""
+        if squeezed.ndim != 4 or squeezed.shape[1] != 4 * len(self.radii):
+            raise ValueError("Expected squeezed four-neighbour DNS channels")
+        if not self.adaptive_scale:
+            return squeezed.new_ones((squeezed.shape[0], len(self.radii),
+                                      squeezed.shape[2], squeezed.shape[3]))
+        return len(self.radii) * torch.softmax(
+            self.scale_predictor(squeezed), dim=1)
+
+    def forward_one(self, features):
+        squeezed = self.squeezed_descriptor(features)
+        weights = self.scale_weight_map(squeezed)
+        squeezed = (squeezed.reshape(features.shape[0], len(self.radii), 4,
+                                      features.shape[2], features.shape[3]) *
+                    weights.unsqueeze(2)).flatten(1, 2)
         structure = self.projection(squeezed)  # [B,C,H,W]
         return features + self.gate * structure
 
