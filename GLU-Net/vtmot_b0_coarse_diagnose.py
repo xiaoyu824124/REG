@@ -52,11 +52,28 @@ def check_geometry():
     assert not ((far-zero).abs().amax(1) <= 64).any()
     mapped = grid((512, 512)) + np.array([32, -16], dtype=np.float32)
     assert np.allclose(mapped[100, 100], [132, 84])
+    interior = selected.clone()
+    interior[:, :4] = interior[:, -4:] = False
+    interior[:, :, :4] = interior[:, :, -4:] = False
+    exact_translation = actual_candidates(zero, native, interior, 32)
+    assert exact_translation['within_half_grid'] == int(interior.sum())
+    # A nonuniform warp samples x=2*r_x. GT x=5 lies inside the nominal
+    # radius around x=8, but no actual candidate is nearer than one cell.
+    nonlinear = torch.zeros(1, 2, 9, 9)
+    nonlinear[:, 0] = torch.arange(9)[None, None] * (512/9)
+    nonlinear_gt = torch.zeros_like(nonlinear)
+    nonlinear_gt[:, 0] = 512/9
+    one_query = torch.zeros(1, 9, 9, dtype=torch.bool)
+    one_query[:, 4, 4] = True
+    exact_nonlinear = actual_candidates(nonlinear, nonlinear_gt, one_query, 9)
+    assert (nonlinear_gt-nonlinear).abs().amax(1)[one_query] <= 4*512/9
+    assert exact_nonlinear['within_half_grid'] == 0
     return {'direction': 'VI target -> IR source, XY', 'raw16_unit': '256px',
             'reference32_unit': '256px', 'reference32_512px_xy': [32, -16],
             'first_window_radius_grid_px': 4,
             'first_window_radius_512px_per_axis': 64,
-            'known_translation_and_window': 'passed'}
+            'known_translation_and_window': 'passed',
+            'nonuniform_warp_actual_candidates': 'passed'}
 
 
 def load_fixed(args, device):
@@ -193,7 +210,49 @@ def search(c, truth, valid, size, before, after):
             'inside': group(inside), 'outside': group(outside)}, inside, outside, queries
 
 
+def actual_candidates(center512, truth512, selected, size):
+    """Check the source coordinates really sampled by all 81 warped neighbors.
+
+    Correlation at p compares target(p) with warped_source(p+d), hence the
+    source coordinate is p+d+flow(p+d), not p+flow(p)+d. Distances use the
+    native GT convention of pooled flow on integer feature queries. Coverage
+    at .5/1 cell is a stated candidate-distance criterion, not a guarantee
+    of matching success or a proof that a decoder cannot recover outside it.
+    """
+    yy, xx = torch.meshgrid(torch.arange(size, device=center512.device),
+                            torch.arange(size, device=center512.device), indexing='ij')
+    base = torch.stack((xx, yy))[None].to(center512)
+    sampled = base + center512 * (size/512)
+    expected = base + truth512 * (size/512)
+    nearest = torch.full_like(selected, float('inf'), dtype=center512.dtype)
+    any_valid = torch.zeros_like(selected)
+    radius = 4
+    for dy in range(-radius, radius+1):
+        for dx in range(-radius, radius+1):
+            py = slice(max(0, -dy), min(size, size-dy))
+            px = slice(max(0, -dx), min(size, size-dx))
+            ry = slice(max(0, dy), min(size, size+dy))
+            rx = slice(max(0, dx), min(size, size+dx))
+            candidate = sampled[:, :, ry, rx]
+            inbounds = torch.isfinite(candidate).all(1) & (
+                candidate[:, 0] >= 0) & (candidate[:, 0] <= size-1) & (
+                candidate[:, 1] >= 0) & (candidate[:, 1] <= size-1)
+            distance = (candidate-expected[:, :, py, px]).abs().amax(1)
+            distance = distance.masked_fill(~inbounds, float('inf'))
+            nearest[:, py, px] = torch.minimum(nearest[:, py, px], distance)
+            any_valid[:, py, px] |= inbounds
+    usable = selected & any_valid
+    return {'queries': int(selected.sum()), 'any_valid_candidate': int(usable.sum()),
+            'within_half_grid': int((selected & (nearest <= .5)).sum()),
+            'within_one_grid': int((selected & (nearest <= 1.)).sum()),
+            'nearest_linf_sum_grid_px': float(nearest[usable].sum()),
+            'no_valid_candidate': int((selected & ~any_valid).sum())}
+
+
 def summarize(rows):
+    def mean_or_none(total, count):
+        return total/count if count else None
+
     result = {'frames': len(rows), 'valid_pixels': sum(r['valid_pixels'] for r in rows)}
     pixels = result['valid_pixels']
     result['zero_flow_epe_512px'] = sum(r['zero_epe_sum'] for r in rows)/pixels
@@ -205,11 +264,22 @@ def summarize(rows):
         'valid_queries': sum(r[f'window{size}_queries'] for r in rows),
         'inside_fraction': sum(r[f'window{size}_inside'] for r in rows)/max(1, sum(r[f'window{size}_queries'] for r in rows)),
         'center_inbounds_fraction': sum(r[f'window{size}_inbounds'] for r in rows)/max(1, sum(r[f'window{size}_queries'] for r in rows)),
-        'inside_center_epe': sum(r[f'window{size}_inside_center_epe_sum'] for r in rows)/max(1, sum(r[f'window{size}_inside'] for r in rows)),
-        'inside_after_epe': sum(r[f'window{size}_inside_after_epe_sum'] for r in rows)/max(1, sum(r[f'window{size}_inside'] for r in rows)),
-        'outside_center_epe': sum(r[f'window{size}_outside_center_epe_sum'] for r in rows)/max(1, sum(r[f'window{size}_outside'] for r in rows)),
-        'outside_after_epe': sum(r[f'window{size}_outside_after_epe_sum'] for r in rows)/max(1, sum(r[f'window{size}_outside'] for r in rows))}
+        'inside_center_epe': mean_or_none(sum(r[f'window{size}_inside_center_epe_sum'] for r in rows), sum(r[f'window{size}_inside'] for r in rows)),
+        'inside_after_epe': mean_or_none(sum(r[f'window{size}_inside_after_epe_sum'] for r in rows), sum(r[f'window{size}_inside'] for r in rows)),
+        'outside_center_epe': mean_or_none(sum(r[f'window{size}_outside_center_epe_sum'] for r in rows), sum(r[f'window{size}_outside'] for r in rows)),
+        'outside_after_epe': mean_or_none(sum(r[f'window{size}_outside_after_epe_sum'] for r in rows), sum(r[f'window{size}_outside'] for r in rows))}
         for size in (32, 64, 128)}
+    result['actual_candidate_windows'] = {}
+    for size in (32, 64, 128):
+        total = sum(r[f'actual{size}_queries'] for r in rows)
+        usable = sum(r[f'actual{size}_any_valid_candidate'] for r in rows)
+        result['actual_candidate_windows'][str(size)] = {
+            'valid_queries': total,
+            'within_half_grid_fraction': sum(r[f'actual{size}_within_half_grid'] for r in rows)/max(1, total),
+            'within_one_grid_fraction': sum(r[f'actual{size}_within_one_grid'] for r in rows)/max(1, total),
+            'no_valid_candidate_fraction': sum(r[f'actual{size}_no_valid_candidate'] for r in rows)/max(1, total),
+            'mean_nearest_linf_grid_px_with_valid_candidates': sum(
+                r[f'actual{size}_nearest_linf_sum_grid_px'] for r in rows)/max(1, usable)}
     result['deconv_minus_bilinear_mean_512px'] = sum(r['deconv_shift_sum'] for r in rows)/max(1, sum(r['deconv_shift_count'] for r in rows))
     result['deconv_minus_bilinear_frame_p95_mean_512px'] = float(
         np.mean([r['deconv_shift_p95_512px'] for r in rows]))
@@ -234,16 +304,16 @@ def summarize(rows):
         count = sum(r[f'motion_{label}_pixels'] for r in rows)
         result['gt_displacement_bins'][label] = {
             'pixels': count,
-            'stage_epe_512px': {name: sum(
-                r[f'{name}_motion_{label}_epe_sum'] for r in rows)/max(1, count)
+            'stage_epe_512px': {name: mean_or_none(sum(
+                r[f'{name}_motion_{label}_epe_sum'] for r in rows), count)
                 for name in STAGES}}
     result['first_window_assigned_full_pixels'] = {}
     for side in ('inside', 'outside', 'invalid_query'):
         count = sum(r[f'first32_{side}_pixels'] for r in rows)
         result['first_window_assigned_full_pixels'][side] = {
             'pixels': count,
-            'stage_epe_512px': {name: sum(r[f'{name}_first32_{side}_epe_sum']
-                                           for r in rows)/max(1, count) for name in STAGES}}
+            'stage_epe_512px': {name: mean_or_none(sum(r[f'{name}_first32_{side}_epe_sum']
+                                           for r in rows), count) for name in STAGES}}
     for key in ('nmi', 'lncc17_squared', 'edge_f1_3x3_proxy',
                 'edge_retention_proxy', 'visible_gt_mse_rgb01', 'visible_gt_ncc_rgb01'):
         result[key] = float(np.mean([r[key] for r in rows]))
@@ -293,6 +363,11 @@ def frame_rows(dataset, model, frame, device):
                                     (64, 'warp64_center', 'decoded64'),
                                     (128, 'warp128_center', 'decoded128')):
             window, inside, outside, queries = search(c, truth, valid, size, before, after)
+            native_gt, _ = pooled_truth(truth, valid, size)
+            actual = actual_candidates(c[before]*(2 if size == 32 else 1),
+                                       native_gt, queries, size)
+            for key, value in actual.items():
+                row[f'actual{size}_{key}'] = value
             row[f'window{size}_queries'] = window['valid_queries']
             row[f'window{size}_inside'] = window['inside']['queries']
             row[f'window{size}_outside'] = window['outside']['queries']
@@ -468,9 +543,12 @@ def main():
     for row in rows:
         grouped[row['mode']].append(row)
     result = {'stage': args.stage, 'geometry': geometry, 'checkpoint': checkpoint,
+              'window_definition_revision': 2,
               'flow_direction': 'VI target -> IR source',
               'interpolation': 'F.interpolate align_corners=False; model warp grid_sample align_corners=True',
               'window_query_rule': 'area-pooled GT, mask fraction >0.8; 9x9 local correlation radius 4',
+              'windows_legacy_warning': 'windows and first-window inside/outside groups are NOMINAL center-radius statistics, not actual warped candidate coverage',
+              'actual_candidate_rule': 'source sample at p+d+flow(p+d), d in [-4,4]^2; p+d and sampled source must be inbounds; all GT-valid queries remain denominator; nearest L-infinity source-coordinate distance <=0.5 or <=1 native cell',
               'full_pixel_rule': 'same original 512px GT valid mask for P0/P1, regardless of predicted bounds',
               'image_metrics': 'NMI 64-bin 2MI/(H1+H2), squared LNCC 17x17; edge metrics are proxies; visible_gt is evaluation only',
               'native_grid_rule': 'GT pooled by area at each native grid; separately counted from 512px raster metrics',
