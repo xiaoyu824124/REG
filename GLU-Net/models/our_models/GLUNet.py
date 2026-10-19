@@ -46,6 +46,11 @@ class GLUNet_model(nn.Module):
             if coarse_attention else None)
         self.coarse_dns = (CoarseDNS(channels=512 if pyramid_type == 'VGG' else 1024)
                            if coarse_dns else None)
+        # Optional single-layer ablation: attached only after loading a frozen
+        # B0 checkpoint, so legacy state dictionaries and paths stay intact.
+        self.local_dns64 = None
+        self.capture_local64_pre_flow = False
+        self.local64_pre_flow = None
         if coarse_dns_order not in ('before_sa', 'between_sa_ca', 'after_ca'):
             raise ValueError('Unknown coarse DNS position')
         if coarse_dns and not coarse_attention and coarse_dns_order != 'before_sa':
@@ -534,6 +539,14 @@ class GLUNet_model(nn.Module):
 
         # level 1/8 of original resolution
         ratio = 1.0 / 8.0
+        if self.capture_local64_pre_flow:
+            # This is the actual 64-grid warp centre in 512-image-pixel units.
+            self.local64_pre_flow = up_flow3.detach()
+        if self.local_dns64 is not None:
+            # Each modality gets the same DNS before VI->IR source warping.
+            # Keep the frozen decoder outside no_grad so its input gradient
+            # reaches DNS through the local correlation operator.
+            c12, c22 = self.local_dns64(c12, c22)
         warp2 = warp(c22, up_flow3*div*ratio)
         corr2 = correlation.FunctionCorrelation(tensorFirst=c12, tensorSecond=warp2)
         corr2 = self.leakyRELU(corr2)
